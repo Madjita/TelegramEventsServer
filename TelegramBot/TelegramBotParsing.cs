@@ -400,45 +400,142 @@ public partial class TelegramBot : IAsyncDisposable
                         }
                         break;
                     }
-                case KeyboardCommand.StartRegistrationBot:
+                case Facade.KeyboardCommand.SelectAlreadyRegistrationCompany:
+                {
+                   
+                    var response = await SelectCompany(telegramUser);
+                    
+                    var responceText = response.Message ?? "Ошибка";
+                    
+                    var newContext = new MessageContext.TelegramBotMessageContext()
                     {
-                        var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
-                        var organization = await _mediator.Send(commandGetOrg);
+                        LastCommand = command,
+                        State = Facade.TelegramUserState.SelectCompany,
+                        TelegramUser = telegramUser,
+                        LastMessage = responceText,
+                    };
 
-                        //Введите информацию для регестриации бота
-                        var responceText =  "1) Перейдите в @BotFather:\n"
-                                          + "2) Введите или выбирите из меню /newbot\n"
-                                          + "3) Выбирите бота /mybots\n"
-                                          + "4) Нажмите на кнпоку \"API Token\" и скопируйте токен\n"
-                                          + "5) Введите информацию для регистрации вашего телеграм ботам в системе через *;*:\n\n\n"
-                                          + "Пример:\n"
-                                          + "@TestBot;*ваш скопированный из @BotFather токен*";
+                    var added = _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
+                    
+                    await botClient.SendTextMessageAsync(
+                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                        text: responceText,
+                        replyMarkup: response.InlineKeyboard,
+                        cancellationToken: cancellationToken);
+                    break;
+                }
+                case Facade.KeyboardCommand.StartRegistrationBot:
+                {
+                    var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
+                    var organization = await _mediator.Send(commandGetOrg);
+                    string responceText = string.Empty;
 
-                        var newContext = new MessageContext.TelegramBotMessageContext()
-                        {
-                            LastCommand = command,
-                            State = Facade.TelegramUserState.RegistrationTelegramBot,
-                            TelegramUser = telegramUser,
-                            LastMessage = command,
-                            Org = organization.customerCompany
-                        };
-
-                        _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
+                    if (!organization.Success)
+                    {
+                        responceText  = $"Выбранной компании не сущесвтует в БД.";
 
                         await botClient.EditMessageTextAsync(
                             chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
                             messageId: query.Message.MessageId,
                             text: responceText,
-                            cancellationToken: cancellationToken,
-                            parseMode: ParseMode.Markdown);
-
-                        break;
+                            cancellationToken: cancellationToken);
                     }
-                case KeyboardCommand.EndRegistrationBot:
+                    else
                     {
+                        //Получить список доступных типов ботов для создания
+                        //1) Показываем кнопку Зарегестрировать телеграм бота
+                        //2) Отображаем доступные типы телеграм ботов
+                        var response = await SelectTypeBot(telegramUser, organization.customerCompany.Id);
+                        
+                        responceText = response.Message ?? "Ошибка";
 
-                        break;
+                        await botClient.SendTextMessageAsync(
+                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                            text: responceText,
+                            replyMarkup: response.InlineKeyboard,
+                            cancellationToken: cancellationToken);
+
                     }
+                    
+                    break;
+                }
+                case Facade.KeyboardCommand.SelectBotType:
+                {
+                    //Выбранная организация и тип создаваемого бота
+                    //1) Идем создавать бота
+
+                    var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
+                    var organization = await _mediator.Send(commandGetOrg);
+                    string responceText = string.Empty;
+
+                    if (!organization.Success)
+                    {
+                        responceText  = $"Выбранной компании не сущесвтует в БД.";
+
+                        await botClient.EditMessageTextAsync(
+                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                            messageId: query.Message.MessageId,
+                            text: responceText,
+                            cancellationToken: cancellationToken);
+                    }
+                    else
+                    {
+                        // var telegramBotByTypeBotId = new GetAllTelegramBotByOrgIdQuery() { OrgId = organization.customerCompany.Id };
+                        // var telegramBots = await _mediator.Send(telegramBotByOrgId);
+                    }
+                    break;
+                }
+                case Facade.KeyboardCommand.StartCreationBot:
+                {
+                    //Выбранная организация и тип создаваемого бота
+                    //1) Идем создавать бота
+                    
+                    var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
+                    var organization = await _mediator.Send(commandGetOrg);
+                    
+                    //Берем тип
+                    var telegramBotTypeId = parametrs[2].ToInt();
+
+                    //Введите информацию для регестриации бота
+                    var responceText =  "1) Перейдите в @BotFather:\n"
+                                        + "2) Введите или выбирите из меню /newbot\n"
+                                        + "3) Выбирите бота /mybots\n"
+                                        + "4) Нажмите на кнпоку \"API Token\" и скопируйте токен\n"
+                                        + "5) Введите информацию для регистрации вашего телеграм ботам в системе через *;*\n\n\n"
+                                        + "Пример:\n"
+                                        + "@TestBot; token\n\n"
+                                        + "Где:\n"
+                                        + "@TestBot => *название бота желательно через @*\n"
+                                        + "token => *ваш скопированный из @BotFather токен*";
+
+                    var newContext = new MessageContext.TelegramBotMessageContext()
+                    {
+                        LastCommand = command,
+                        State = Facade.TelegramUserState.RegistrationTelegramBot,
+                        TelegramUser = telegramUser,
+                        LastMessage = command,
+                        Org = organization.customerCompany,
+                        TelegramBotTypeId = telegramBotTypeId
+                    };
+
+                    if (_messageContexts.ContainsKey(telegramUser.TelegramChatId))
+                    {
+                        _messageContexts[telegramUser.TelegramChatId] = newContext;
+                    }
+                    
+                    await botClient.EditMessageTextAsync(
+                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                        messageId: query.Message.MessageId,
+                        text: responceText,
+                        cancellationToken: cancellationToken,
+                        parseMode: ParseMode.Markdown);
+
+                    break;
+                }
+                case Facade.KeyboardCommand.EndRegistrationBot:
+                { 
+                    break;
+                }
             }
 
         }
@@ -507,7 +604,6 @@ public partial class TelegramBot : IAsyncDisposable
         {
             case "/start":
             {
-
                 //Определить пользователь пришел первый раз или уже существует в системе ?
                 var responce = await Start(telegramUser);
 
@@ -876,7 +972,7 @@ public partial class TelegramBot : IAsyncDisposable
                                         OrgId = conxtexMessage.Org.Id,
                                         TelegramBotName = botName.Replace("@", string.Empty),
                                         TelegramBotToken = token,
-                                        TelegramBotType = "PartyTelegramBot"
+                                        TelegramBotTypeId = conxtexMessage.TelegramBotTypeId
                                     } 
                                 };
 
@@ -884,7 +980,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                                 if(registretionBot.Success)
                                 {
-                                    _telegramBotWorkerManager.Start(registretionBot.TelegramBot.TelegramBotType, registretionBot.TelegramBot);
+                                    _telegramBotWorkerManager.Start(registretionBot.TelegramBot.TelegramBotType.TelegramBotTypeName, registretionBot.TelegramBot);
                                     sentMessage = await botClient.SendTextMessageAsync(
                                                   chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
                                                   text: $"Бот {botName} успешно зарегистрирован",
@@ -969,4 +1065,13 @@ public partial class TelegramBot : IAsyncDisposable
 
     public abstract Task<ResponceTelegramFacade> Start(User? requestTelegramUser);
 
+    public virtual async Task<ResponceTelegramFacade> SelectCompany(User user)
+    {
+        throw new NotImplementedException();
+    }
+    
+    public virtual async Task<ResponceTelegramFacade> SelectTypeBot(User user, int orgId)
+    {
+        throw new NotImplementedException();
+    }
 }

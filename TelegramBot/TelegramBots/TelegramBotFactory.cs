@@ -18,7 +18,7 @@ public class TelegramBotFactory
             IMediator mediator,
             IServiceScopeFactory scopeFactory)
     {
-        return bot.TelegramBotType switch
+        return bot.TelegramBotType.TelegramBotTypeName switch
         {
             "MainManagerTelgramBot" => new MainManagerTelgramBot(bot.OrgId, bot.TelegramBotName, bot.TelegramBotToken, logger, mediator, scopeFactory),
             "PartyTelegramBot" => new PartyTelegramBot(bot.OrgId, bot.TelegramBotName, bot.TelegramBotToken, logger, mediator, scopeFactory),

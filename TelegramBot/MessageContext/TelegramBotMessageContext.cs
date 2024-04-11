@@ -27,6 +27,7 @@ namespace TelegramBot.MessageContext
         public string? LastMessage { get; set; }
         public User TelegramUser { get; set; }
         public Org Org { get; set; }
+        public int TelegramBotTypeId  { get; set; }
         public UserInfo UserInfo { get; set; }
         
         public static MessageContext.TelegramBotMessageContext CreateOrReplaseTelegramBotMessageContext(TelegramBotMessageContext? oldContext, TelegramBotMessageContext newContext, ConcurrentDictionary<long, TelegramBotMessageContext> _messageContexts)

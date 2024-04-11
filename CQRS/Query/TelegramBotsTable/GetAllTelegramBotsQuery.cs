@@ -21,6 +21,6 @@ public class GetAllTelegramBotsQueryHandler : DbContextInjection, IRequestHandle
 
     public async Task<IEnumerable<TelegramBots>> Handle(GetAllTelegramBotsQuery request, CancellationToken cancellationToken)
     {
-        return await db.TelegramBots.ToListAsync();
+        return await db.TelegramBots.Include(_ => _.TelegramBotType).ToListAsync();
     }
 }

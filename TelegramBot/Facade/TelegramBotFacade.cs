@@ -35,6 +35,8 @@ namespace TelegramBot.Facade
         RegistrationCustomerCompany,
         RegistrationParty,
         RegistrationTelegramBot,
+        
+        SelectCompany,
 
 
         //weatherTelegramBot
@@ -50,8 +52,10 @@ namespace TelegramBot.Facade
         ExitFromBot,
         ExitFromBotYes,
         ExitFromBotNo,
-        StartRegistrationCompany,
-        SelectCompany,
+        StartRegistrationCompany, // хотим зарегестрировать компанию
+        SelectCompany, //выбрали конкретную уже зарегестрированную компанию
+        SelectBotType, //выбрали конкретный тип создаваемого бота.
+        SelectAlreadyRegistrationCompany, // выбрали отобразить зарегестрированные компанию относительно текущего пользователя
 
         StartRegistrationDancer,
         StartRegistrationFriend,
@@ -66,6 +70,7 @@ namespace TelegramBot.Facade
 
         //
         StartRegistrationBot,
+        StartCreationBot,
         EndRegistrationBot,
 
         //
@@ -117,6 +122,10 @@ namespace TelegramBot.Facade
 
         //Test
         Task<List<List<InlineKeyboardButton>>> PageCompanyButtons(IMediator mediator, User? responceUser, int currentPage = 0, int companiesPerPage = 4);
+        Task<List<List<InlineKeyboardButton>>> PageBotTypeButtons(IMediator mediator, User? responceUser,int orgId, int currentPage = 0, int companiesPerPage = 4);
+        
+        //Start buttons
+        InlineKeyboardMarkup StartManagerButtons(IMediator mediator, User responceUser, int currentPage = 0, int companiesPerPage = 4);
         Task<User?> FindUser(IMediator mediator, User requestTelegramUser, bool isDeleted = false);
     }
 
@@ -129,7 +138,7 @@ namespace TelegramBot.Facade
             _logger = logger;
             _scopeFactory = scopeFactory;
         }
-
+        
         public async Task<User?> FindUser(IMediator mediator, User requestTelegramUser, bool isDeleted = false)
         {
             //Ищем пользователя.
@@ -227,11 +236,9 @@ namespace TelegramBot.Facade
             var responsecheckOrganizationCommand = await mediator.Send(checkOrganizationCommand);
 
             List<List<InlineKeyboardButton>> buttons = new();
-            //buttons.Add(new List<InlineKeyboardButton>());
             buttons.Add(new List<InlineKeyboardButton>());
             buttons.Add(new List<InlineKeyboardButton>());
             //buttons[0].Add(InlineKeyboardButton.WithCallbackData("Выйти из чата", KeyboardCommand.ExitFromBot.ToString()));
-            buttons[0].Add(InlineKeyboardButton.WithCallbackData("Зарегестировать огранизацию", Facade.KeyboardCommand.StartRegistrationCompany.ToString()));
 
             // Заполняем кнопки для выбора организаций на текущей странице
             void FillButtonsForPage(int page)
@@ -257,6 +264,55 @@ namespace TelegramBot.Facade
                 }
 
                 if (currentPage <= (responsecheckOrganizationCommand.totalRecords / companiesPerPage)-1)
+                {
+                    buttons.Add(new List<InlineKeyboardButton>());
+                    buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.NextPage} {currentPage + 1}"));
+                }
+            }
+
+            return buttons;
+        }
+
+        public async Task<List<List<InlineKeyboardButton>>> PageBotTypeButtons(IMediator mediator, User? responceUser, int orgId, int currentPage = 0, int companiesPerPage = 4)
+        {
+             var command = new GetSliceTelegramBotTypeByIsServicesQuery()
+            {
+                IsSystem = false,
+                Skip = currentPage * companiesPerPage,
+                Take = companiesPerPage
+            };
+
+            var responseCommand = await mediator.Send(command);
+
+            List<List<InlineKeyboardButton>> buttons = new();
+            buttons.Add(new List<InlineKeyboardButton>());
+            buttons.Add(new List<InlineKeyboardButton>());
+            //buttons[0].Add(InlineKeyboardButton.WithCallbackData("Выйти из чата", KeyboardCommand.ExitFromBot.ToString()));
+
+            // Заполняем кнопки для выбора организаций на текущей странице
+            void FillButtonsForPage(int page)
+            {
+
+                for (int i = 0; i < responseCommand.TelegramBotTypes.Count; i++)
+                {
+                    buttons.Add(new List<InlineKeyboardButton>());
+                    var item = responseCommand.TelegramBotTypes[i];
+                    var button = InlineKeyboardButton.WithCallbackData(item.TelegramBotTypeName, $"{Facade.KeyboardCommand.StartCreationBot} {orgId} {item.Id}");
+                    buttons.LastOrDefault().Add(button);
+                }
+            }
+
+            FillButtonsForPage(currentPage);
+
+            // Добавляем кнопки "назад" и "вперед", если необходимо
+            if (responseCommand.TotalRecords > companiesPerPage)
+            {
+                if (currentPage > 0)
+                {
+                    buttons[1].Insert(0, InlineKeyboardButton.WithCallbackData("⬅️", $"{Facade.KeyboardCommand.PrevPage} {currentPage - 1}"));
+                }
+
+                if (currentPage <= (responseCommand.TotalRecords / companiesPerPage)-1)
                 {
                     buttons.Add(new List<InlineKeyboardButton>());
                     buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.NextPage} {currentPage + 1}"));
@@ -328,6 +384,24 @@ namespace TelegramBot.Facade
             var responseUpdateUser = await mediator.Send(new UpdateUserCommand { newUser = responceUser });
 
             return await Start(typeTelegramBot, requestTelegramUser);
+        }
+        
+        public InlineKeyboardMarkup StartManagerButtons(IMediator mediator, User responceUser, int currentPage = 0, int companiesPerPage = 4)
+        {
+            // Создаем клавиатуру с кнопками
+            var keyboard = new InlineKeyboardMarkup(new[]
+            {
+                new []
+                {
+                    InlineKeyboardButton.WithCallbackData("Зарегистрировать организацию", KeyboardCommand.StartRegistrationCompany.ToString()),
+                },
+                new []
+                {
+                    InlineKeyboardButton.WithCallbackData("Выбрать из своих зарегистрированных организаций", KeyboardCommand.SelectAlreadyRegistrationCompany.ToString())
+                }
+            });
+            
+            return keyboard;
         }
     }
 }

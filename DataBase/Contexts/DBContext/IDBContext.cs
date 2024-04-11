@@ -24,6 +24,7 @@ namespace DataBase.Contexts.DBContext
         public DbSet<OpenWeatherMap> OpenWeatherMap { get; }
         public DbSet<WeatherSubscribers> WeatherSubscribers { get; }
         public DbSet<WeatherCity> WeatherCity { get; }
+        public DbSet<TelegramBotTypes> TelegramBotTypes { get; }
         public int SaveChanges();
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
@@ -46,8 +47,9 @@ namespace DataBase.Contexts.DBContext
         public virtual DbSet<TelegramBotInChats> TelegramBotInChats { get; set; }
         public virtual DbSet<OpenWeatherMap> OpenWeatherMap { get; set; }
         public virtual DbSet<WeatherSubscribers> WeatherSubscribers { get; set; }
-        
         public virtual DbSet<WeatherCity> WeatherCity { get; set; }
+        
+        public virtual DbSet<TelegramBotTypes> TelegramBotTypes { get; set; }
 
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {
@@ -70,12 +72,13 @@ namespace DataBase.Contexts.DBContext
             builder.Entity<Event>();
             builder.Entity<TelegramBotMessage>();
             builder.Entity<Org>();
-            builder.Entity<TelegramBots>();
+            builder.Entity<TelegramBots>().HasOne(p => p.TelegramBotType).WithMany(p=> p.TelegramBots);
             builder.Entity<XOrgUser>();
             builder.Entity<TelegramBotInChats>();
             builder.Entity<OpenWeatherMap>();
             builder.Entity<WeatherSubscribers>();
             builder.Entity<WeatherCity>();
+            builder.Entity<TelegramBotTypes>();
         }
 
         #region Helpers
