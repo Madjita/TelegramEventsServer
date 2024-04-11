@@ -22,6 +22,8 @@ public class SessionCookieAuthenticationHandler : AuthenticationHandler<SessionC
     private readonly IBucketProvider _bucketProvider;
     private readonly IUserFacade _userFacade;
     
+    private static List<string> _typesToFind = new List<string> { "SessionUID", "UserId", "Role" };
+
     public SessionCookieAuthenticationHandler(
         IOptionsMonitor<SessionCookieAuthenticationSchemeOptions> options, 
         ILoggerFactory logger,
@@ -55,29 +57,29 @@ public class SessionCookieAuthenticationHandler : AuthenticationHandler<SessionC
             {
                 var claimsPrincipal = result.Principal;
                 var claims = claimsPrincipal.Claims;
-
-                var userNameClaim = claims.FirstOrDefault(c => c.Type == "UserName")?.Value;
-                var firstNameClaim = claims.FirstOrDefault(c => c.Type == "FirstName")?.Value;
-                var sessionUIDClaim = claims.FirstOrDefault(c => c.Type == "SessionUID")?.Value;
                 
-                // // Создаем утверждения (claims) пользователя
-                // var claims2 = new List<Claim>
-                // {
-                //     new Claim("UserName", userNameClaim),
-                //     new Claim("FirstName", firstNameClaim),
-                //     new Claim("SessionUID", sessionUIDClaim),
-                //     new Claim("Role", "Administrator"),
-                //     // Другие утверждения, если необходимо
-                // };
-                //
-                if (string.IsNullOrEmpty(sessionUIDClaim) || string.IsNullOrEmpty(userNameClaim))
+                var userClaims = claims
+                    .Where(c => _typesToFind.Contains(c.Type))
+                    .ToDictionary(c => c.Type, c => c.Value);
+                
+                if (_typesToFind.All(type => userClaims.ContainsKey(type)))
+                {
+                    var sessionUIDClaim = userClaims["SessionUID"];
+                    var userIdClaim = userClaims["UserId"];
+                    
+                    if (string.IsNullOrEmpty(sessionUIDClaim) || string.IsNullOrEmpty(userIdClaim))
+                    {
+                        return AuthenticateResult.Fail("SessionCookieNotCorrect");
+                    }
+                    
+                    var claimsIdentity = new ClaimsIdentity(claims, nameof(SessionCookieAuthenticationHandler));
+                    var ticket = new AuthenticationTicket(new ClaimsPrincipal(claimsIdentity), Scheme.Name);
+                    return AuthenticateResult.Success(ticket);
+                }
+                else
                 {
                     return AuthenticateResult.Fail("SessionCookieNotCorrect");
                 }
-            
-                var claimsIdentity = new ClaimsIdentity(claims, nameof(SessionCookieAuthenticationHandler));
-                var ticket = new AuthenticationTicket(new ClaimsPrincipal(claimsIdentity), Scheme.Name);
-                return AuthenticateResult.Success(ticket);
             }
             else
             {

@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace TelegramEvents.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 [Authorize(AuthenticationSchemes = AuthenticationSchemes.SessionCookie)]
 public class AdminController : ControllerBase
 {
@@ -23,15 +23,16 @@ public class AdminController : ControllerBase
         _logger = MyLoggerNamespace.Logger.InitLogger(this.GetType().Name);
         _mediator = mediator;
     }
-
-    [HttpGet(Name = "getUsers")]
+    
+    [Route("getTelegramUsers")]
+    [HttpGet]
     [Authorize(Policy = nameof(AdminRoleRequirement))]
-    public async Task<List<User>> GetUsers()
+    public async Task<IActionResult> GetUsers()
     {
         List<User> telegramUSersDto = await _mediator.Send(new GetUserAllQuery());
         
         _logger.WriteLine(MessageType.Debug,$"telegramUSersDto=[{telegramUSersDto}]");
         
-        return telegramUSersDto; 
+        return Ok(telegramUSersDto); 
     }
 }

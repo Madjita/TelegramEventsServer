@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace TelegramEvents.Controllers
 {
-
+    [Route("api")]
     [Authorize(AuthenticationSchemes = AuthenticationSchemes.SessionCookie)]
     public class AuthController : ControllerBase
     {
@@ -25,70 +25,70 @@ namespace TelegramEvents.Controllers
             _userFacade = userFacade;
         }
 
-        [Route("login")]
-        [HttpGet]
-        [AllowAnonymous]
-        [SwaggerOperation(Summary = "Signs in as a User account", Description = "You must use User account in order to interact with the rest of the API")]
-        //[ProducesResponseType(, StatusCodes.Status200OK)]
-        public async Task<IActionResult> LoginAsync()
-        {
-            try
-            {
-                string sessionUID = HttpContext.Request.Cookies["SessionUID"];
-
-                if (string.IsNullOrEmpty(sessionUID))
-                {
-                    return BadRequest("SessionUID cookie is missing.");
-                }
-
-                var result = await _userFacade.LogInAsync(sessionUID);
-
-                if(result is null)
-                {
-                    return BadRequest("User is missing.");
-                }
-
-                return Ok(result.FirstName);
-            }
-            catch (System.Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-
-        [Route("login")]
-        [HttpPost]
-        [AllowAnonymous]
-        [SwaggerOperation(Summary = "Signs in as a User account", Description = "You must use User account in order to interact with the rest of the API")]
-        //[ProducesResponseType(, StatusCodes.Status200OK)]
-        public async Task<IActionResult> LoginAsync([FromBody] LoginDto login_request)
-        {
-            try
-            {
-                var result = await _userFacade.AuthenticateAsync(login_request);
-
-                if (result.succes)
-                {
-                    HttpContext.Response.Cookies.Append("SessionUID", result.session, new CookieOptions
-                    {
-                        SameSite = SameSiteMode.Lax,
-                        Expires = DateTimeOffset.Now.AddDays(1),
-                        IsEssential = true
-                    });
-
-                    return Ok(GetUserForFront(result.user));
-                }
-                else
-                {
-                    return BadRequest(result);
-                }
-            }
-            catch (System.Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
+        // [Route("login")]
+        // [HttpGet]
+        // [AllowAnonymous]
+        // [SwaggerOperation(Summary = "Signs in as a User account", Description = "You must use User account in order to interact with the rest of the API")]
+        // //[ProducesResponseType(, StatusCodes.Status200OK)]
+        // public async Task<IActionResult> LoginAsync()
+        // {
+        //     try
+        //     {
+        //         string sessionUID = HttpContext.Request.Cookies["SessionUID"];
+        //
+        //         if (string.IsNullOrEmpty(sessionUID))
+        //         {
+        //             return BadRequest("SessionUID cookie is missing.");
+        //         }
+        //
+        //         var result = await _userFacade.LogInAsync(sessionUID);
+        //
+        //         if(result is null)
+        //         {
+        //             return BadRequest("User is missing.");
+        //         }
+        //
+        //         return Ok(result.FirstName);
+        //     }
+        //     catch (System.Exception e)
+        //     {
+        //         return BadRequest(e.Message);
+        //     }
+        // }
+        //
+        //
+        // [Route("login")]
+        // [HttpPost]
+        // [AllowAnonymous]
+        // [SwaggerOperation(Summary = "Signs in as a User account", Description = "You must use User account in order to interact with the rest of the API")]
+        // //[ProducesResponseType(, StatusCodes.Status200OK)]
+        // public async Task<IActionResult> LoginAsync([FromBody] LoginDto login_request)
+        // {
+        //     try
+        //     {
+        //         var result = await _userFacade.AuthenticateAsync(login_request);
+        //     
+        //         if (result.succes)
+        //         {
+        //             HttpContext.Response.Cookies.Append("SessionUID", result.session, new CookieOptions
+        //             {
+        //                 SameSite = SameSiteMode.Lax,
+        //                 Expires = DateTimeOffset.Now.AddDays(1),
+        //                 IsEssential = true
+        //             });
+        //     
+        //             return Ok(GetUserForFront(result.user));
+        //         }
+        //         else
+        //         {
+        //             return BadRequest(result);
+        //         }
+        //     }
+        //     catch (System.Exception e)
+        //     {
+        //         return BadRequest(e.Message);
+        //     }
+        // }
         
         [Route("loginTelegram")]
         [HttpGet]
@@ -100,9 +100,9 @@ namespace TelegramEvents.Controllers
             try
             {
                 string? sessionUID = HttpContext?.User.Claims.FirstOrDefault(c => c.Type == "SessionUID")?.Value;
+                string? userIdRaw = HttpContext?.User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+                long? userId = !string.IsNullOrWhiteSpace(userIdRaw) ? Convert.ToInt64(userIdRaw) : null;
                 
-                //string sessionUID = HttpContext.Request.Cookies["SessionUID"];
-
                 if (string.IsNullOrEmpty(sessionUID))
                 {
                     return BadRequest(new
@@ -113,7 +113,20 @@ namespace TelegramEvents.Controllers
                 }
                 
                 // Perform the actual logout action using _userService.LogoutAsync
-                var user = await _userFacade.LogInAsync(sessionUID);
+                var user = await _userFacade.LogInAsync(sessionUID, userId);
+
+                if (user is null)
+                {
+                    // Clear the "SessionUID" cookie to log the user out
+                    Response.Cookies.Delete("SessionUID");
+                    
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "User is missing"
+                    });
+                }
+                
                 return Ok(GetUserForFront(user));
             }
             catch (Exception e)
@@ -138,9 +151,8 @@ namespace TelegramEvents.Controllers
                     // Создаем утверждения (claims) пользователя
                     var claims = new List<Claim>
                     {
-                        new Claim("UserName", result.user.UserName),
-                        new Claim("FirstName", result.user.FirstName),
                         new Claim("SessionUID", result.session),
+                        new Claim("UserId", result.user.Id.ToString()),
                         new Claim("Role", result.user.Role),
                         // Другие утверждения, если необходимо
                     };
@@ -161,16 +173,8 @@ namespace TelegramEvents.Controllers
                         CookieAuthenticationDefaults.AuthenticationScheme,
                         new ClaimsPrincipal(claimsIdentity),
                         authProperties);
-
-                    // HttpContext.Response.Cookies.Append("SessionUID",result.session, new CookieOptions
-                    // {
-                    //     SameSite = SameSiteMode.Strict,
-                    //     Expires = DateTimeOffset.Now.AddDays(1),
-                    //     IsEssential = true
-                    // });
-
+                    
                     return Ok(GetUserForFront(result.user));
-                    //return Ok(new { fio = result.user });
                 }
                 else
                 {
@@ -235,6 +239,7 @@ namespace TelegramEvents.Controllers
                 login = user.UserName,
                 email = user.Email,
                 isActive = !user.IsDeleted,
+                role = user.Role,
                 avatar = ""
             };
 

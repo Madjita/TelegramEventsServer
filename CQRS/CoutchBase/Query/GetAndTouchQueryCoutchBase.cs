@@ -19,7 +19,6 @@ public class GetAndTouchQueryCoutchBaseHandler : CouchBaseInjection, IRequestHan
 
     public async Task<IGetResult> Handle(GetAndTouchQueryCoutchBase request, CancellationToken cancellationToken)
     {
-        //var response = await _couchBaseAdapter.GetAndTouchAsync(request.Key, request.updateTimeLife, request.Options);
         var response = await _couchBaseAdapter.GetAsync(request.Key);
 
         if (response is not null)

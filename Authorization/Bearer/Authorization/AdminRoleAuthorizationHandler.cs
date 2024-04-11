@@ -1,43 +1,71 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using TelegramEvents.Fasad;
 
 namespace Authorization.Bearer.Authorization;
 
 public class AdminRoleAuthorizationHandler : AuthorizationHandler<AdminRoleRequirement>
 {
     private readonly HttpContext _httpContext;
-
-    public AdminRoleAuthorizationHandler(IHttpContextAccessor httpContextAccessor)
+    private readonly IUserFacade _userFacade;
+    private static List<string> _typesToFind = new List<string> { "SessionUID", "UserId", "Role" };
+    public AdminRoleAuthorizationHandler(IHttpContextAccessor httpContextAccessor,IServiceScopeFactory scopeFactory)
     {
         _httpContext = httpContextAccessor.HttpContext;
+        _userFacade = scopeFactory.CreateScope().ServiceProvider.GetService<IUserFacade>()!;
     }
     
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, AdminRoleRequirement requirement)
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, AdminRoleRequirement requirement)
     {
         
         if (!context.User.Identity.IsAuthenticated)
         {
             // Пользователь не аутентифицирован, отклоняем запрос
             context.Fail();
-            return Task.CompletedTask;
+            return;
         }
         
-        string? role = context.User.Claims.FirstOrDefault(c => c.Type == "Role")?.Value;
-        
-        if (!string.IsNullOrEmpty(role) && requirement.Roles.Contains(role))
-        {
-            // Пользователь имеет необходимую роль, отмечаем требование как выполненное
-            context.Succeed(requirement);
-        }
-        else
-        {
-            // Пользователь не имеет необходимой роли, отклоняем запрос
-            context.Fail();
-        }
+        var userClaims = context.User.Claims
+            .Where(c => _typesToFind.Contains(c.Type))
+            .ToDictionary(c => c.Type, c => c.Value);
 
-        return Task.CompletedTask;
+        if (_typesToFind.All(type => userClaims.ContainsKey(type)))
+        {
+            var sessionUIDClaim = userClaims["SessionUID"];
+            var userIdClaim = userClaims["UserId"];
+            var roleClaim = userClaims["Role"];
+            
+            long? userId = !string.IsNullOrWhiteSpace(userIdClaim) ? Convert.ToInt64(userIdClaim) : null;
+            
+            if (!string.IsNullOrEmpty(roleClaim) && requirement.Roles.Contains(roleClaim))
+            {
+                // Пользователь имеет необходимую роль, отмечаем требование как выполненное
+            
+                if (string.IsNullOrEmpty(sessionUIDClaim) || string.IsNullOrEmpty(userIdClaim))
+                {
+                    context.Fail();
+                    return;
+                }
+            
+                //ищем пользователя в базе.
+                var user = await _userFacade.LogInAsync(sessionUIDClaim, userId);
+                if (user is null || !requirement.Roles.Contains(user.Role))
+                {
+                    context.Fail();
+                    return;
+                }
+            
+                context.Succeed(requirement);
+                return;
+            }
+        }
+        
+        // Пользователь не имеет необходимой роли, отклоняем запрос
+        context.Fail();
     }
 }
 

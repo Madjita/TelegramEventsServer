@@ -7,12 +7,13 @@ using DataBase.Coutchbase;
 using MediatR;
 using Newtonsoft.Json;
 using DataBase.Entities.Entities_DBContext;
+using MyLoggerNamespace;
 
 namespace TelegramEvents.Fasad
 {
     public interface IUserFacade
     {
-        Task<User?> LogInAsync(string sessionId);
+        Task<User?> LogInAsync(string sessionId, long? userId);
         Task<(bool succes, string session, User? user)> AuthenticateAsync(LoginDto login_request);
         Task<(bool succes, string session, User? user)> AuthenticateTelegramAsync(string requestLoginTelegram);
         Task LogoutAsync(string sessionId);
@@ -23,10 +24,14 @@ namespace TelegramEvents.Fasad
     {
         private readonly ICouchBaseAdapter _couchBaseAdapter;
         private readonly IMediator _mediator;
+        private readonly IMyLogger _logger;
+        
+        private string TypeName => nameof(UserFacade);
         public UserFacade(IMediator mediator,ICouchBaseAdapter couchBaseAdapter)
         {
             _couchBaseAdapter = couchBaseAdapter;
             _mediator = mediator;
+            _logger = MyLoggerNamespace.Logger.InitLogger(TypeName);
         }
 
         private string GetUserKey(int id) => $"UserId_{id}";
@@ -34,9 +39,12 @@ namespace TelegramEvents.Fasad
 
         public async Task<(bool succes, string session, User? user)> AuthenticateAsync(LoginDto login_request)
         {
-            //TODO найти пользователя в NoSql базе
             var response = await CheckSessionInRepository(login_request);
+            return await CreateSession(response);
+        }
 
+        private async Task<(bool succes, string session, User? user)> CreateSession((bool Success, BackendUserSession? userSession) response)
+        {
             if (response.Success)
             {
                 //Если в базе данных он есть значит пользователь был зарегистрирован.
@@ -99,11 +107,9 @@ namespace TelegramEvents.Fasad
                     throw;
                 }
             }
-
-
+            
             return (false, "", null);
         }
-
         private async Task<(bool Success, BackendUserSession? userSession)> CheckSessionInRepository(LoginDto loginDto)
         {
             //Проверям сессию в Repository
@@ -147,7 +153,17 @@ namespace TelegramEvents.Fasad
             return (false, "", null);
         }
 
-        public async Task<User?> LogInAsync(string sessionId)
+        public async Task<User?> LogInAsync(string sessionId,long? userId)
+        {
+            var user = await FindInCouchbase(sessionId);
+            if (user is null && userId is not null)
+            {
+                user = await FindInRepository((long)userId);
+            }
+            return user;
+        }
+
+        private async Task<User?> FindInCouchbase(string sessionId)
         {
             try
             {
@@ -182,7 +198,22 @@ namespace TelegramEvents.Fasad
             }
             catch (Exception ex)
             {
-                throw;
+                _logger.WriteLine(ex,$"[{TypeName}][FindInCouchbase] Error.");
+                return null;
+            }
+        }
+
+        private async Task<User?> FindInRepository(long userId)
+        {
+            try
+            {
+                var userFromRepository = await _mediator.Send(new GetUserByIdQuery() { Id = userId });
+                return userFromRepository;
+            }
+            catch (Exception ex)
+            {
+                _logger.WriteLine(ex,$"[{TypeName}][FindInRepository] Error.");
+                return null;
             }
         }
 
