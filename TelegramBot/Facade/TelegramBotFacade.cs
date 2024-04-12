@@ -48,7 +48,8 @@ namespace TelegramBot.Facade
     {
         PrevPage,
         NextPage,
-
+        
+        CanselOperation,
         ExitFromBot,
         ExitFromBotYes,
         ExitFromBotNo,
@@ -238,12 +239,10 @@ namespace TelegramBot.Facade
             List<List<InlineKeyboardButton>> buttons = new();
             buttons.Add(new List<InlineKeyboardButton>());
             buttons.Add(new List<InlineKeyboardButton>());
-            //buttons[0].Add(InlineKeyboardButton.WithCallbackData("Выйти из чата", KeyboardCommand.ExitFromBot.ToString()));
-
+            
             // Заполняем кнопки для выбора организаций на текущей странице
             void FillButtonsForPage(int page)
             {
-
                 for (int i = 0; i < responsecheckOrganizationCommand.customerCompany.Count; i++)
                 {
                     buttons.Add(new List<InlineKeyboardButton>());
@@ -269,6 +268,11 @@ namespace TelegramBot.Facade
                     buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.NextPage} {currentPage + 1}"));
                 }
             }
+            
+            buttons.Add(new List<InlineKeyboardButton>()
+            {
+                InlineKeyboardButton.WithCallbackData("Завершить", KeyboardCommand.CanselOperation.ToString())
+            });
 
             return buttons;
         }
@@ -318,6 +322,11 @@ namespace TelegramBot.Facade
                     buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.NextPage} {currentPage + 1}"));
                 }
             }
+            
+            buttons.Add(new List<InlineKeyboardButton>()
+            {
+                InlineKeyboardButton.WithCallbackData("Завершить", KeyboardCommand.CanselOperation.ToString())
+            });
 
             return buttons;
         }

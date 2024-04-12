@@ -9,7 +9,7 @@ public partial class PartyTelegramBot : TelegramBot
     public string ChanelName = "PerfectoParty";
 
     public PartyTelegramBot(
-        int id,
+        int? id,
         string name,
         string botToken,
         IMyLogger logger,

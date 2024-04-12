@@ -53,7 +53,7 @@ public partial class PartyTelegramBot : TelegramBot
                                 UserName = update.MyChatMember.From.Username,
                                 TelegramChatId = update.MyChatMember.From.Id
                             },
-                            BotId = this._id
+                            BotId = this.TelegramBotId
                         });
 
 
@@ -75,7 +75,7 @@ public partial class PartyTelegramBot : TelegramBot
                     {
                         var response = _mediator.Send(new DeleteTelegramBotInChatCommand { 
                             TelegramChatId = update.MyChatMember.Chat.Id,
-                            TelegramBotId = _id
+                            TelegramBotId = TelegramBotId
                         });
                         
                         _chanelPostId = null;

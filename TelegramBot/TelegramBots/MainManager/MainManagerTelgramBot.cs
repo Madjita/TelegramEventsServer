@@ -17,7 +17,7 @@ public class MainManagerTelgramBot : TelegramBot
     public string ChanelName = "PerfectoParty";
 
     public MainManagerTelgramBot(
-        int id,
+        int? id,
         string name,
         string botToken,
         IMyLogger logger,

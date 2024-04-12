@@ -40,15 +40,15 @@ namespace TelegramBot
         protected ConcurrentDictionary<long, TelegramBotMessageContext> _messageContexts = new ConcurrentDictionary<long, TelegramBotMessageContext>();
 
         //
-        protected int _id { get; private set; }
-        public int TelegramBotId => _id;
+        protected int? _id { get; private set; }
+        public int TelegramBotId => _id ?? 0;
         //
         protected readonly IMediator _mediator;
         protected readonly ITelegramBotFacade _telegramBotFacade;
         protected readonly IServiceScopeFactory _scopeFactory;
         private readonly ITelegramBotWorkerManager _telegramBotWorkerManager;
 
-        public TelegramBot(int id, string name, string botToken, IMyLogger logger,IMediator mediator, IServiceScopeFactory scopeFactory)
+        public TelegramBot(int? id, string name, string botToken, IMyLogger logger,IMediator mediator, IServiceScopeFactory scopeFactory)
         {
             _id = id;
             _name = name;

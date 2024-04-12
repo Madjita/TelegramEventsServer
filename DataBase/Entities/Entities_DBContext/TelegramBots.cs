@@ -17,7 +17,7 @@ public class TelegramBots : EntityBase
     public string TelegramBotToken { get; set; } = string.Empty;
 
     [Column("org_id")]
-    public int OrgId { get; set; }
+    public int? OrgId { get; set; }
     
     [Column("telegram_bot_type_id")]
     public int TelegramBotTypeId { get; set; }
