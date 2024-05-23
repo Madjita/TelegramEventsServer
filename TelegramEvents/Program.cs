@@ -33,10 +33,12 @@ app.MapControllers();
 app.UseCors();
 
 var appLifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
-appLifetime.ApplicationStopped.Register(() =>
-{
-    app.Services.GetRequiredService<ICouchbaseLifetimeService>().Close();
-});
+appLifetime.ApplicationStopped.Register(async () =>
+    {
+        await app.Services.GetRequiredService<ICouchbaseLifetimeService>().CloseAsync()
+            .ConfigureAwait(false);
+    }
+);
 
 // Указываем путь к файлу сертификата
 //var cert = new X509Certificate2("C:\\Users\\Xok-s\\OneDrive\\Документы\\MyProject\\старый код\\certificate.pem", "1234");
