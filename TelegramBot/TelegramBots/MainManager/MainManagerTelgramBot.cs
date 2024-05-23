@@ -120,4 +120,35 @@ public class MainManagerTelgramBot : TelegramBot
             };
         }
     }
+    
+    private async Task<ResponceTelegramFacade> SelectTeleramBotInOrg(User requestTelegramUser, int orgId)
+    {
+        //Ищем пользователя.
+        var responceUser = await MainManagerFaindUser(requestTelegramUser);
+        if (responceUser is null)
+        {
+            return new ResponceTelegramFacade(TelegramUserErrorCode.TelegramUserNotCreated);
+        }
+        
+        var buttons = await _telegramBotFacade.PageTelegramBotInOrgButtons(_mediator, responceUser, orgId);
+        
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup(buttons);
+        
+        if (buttons.Count > 0)
+        {
+            return new ResponceTelegramFacade(TelegramUserState.StartRegistrationOrganization, true)
+            {
+                Message = "Выбирите телеграм бота для настройки: ",
+                InlineKeyboard = new InlineKeyboardMarkup(buttons)
+            };
+        }
+        else
+        {
+            return new ResponceTelegramFacade(TelegramUserState.StartRegistrationOrganization, true)
+            {
+                Message = "Зарегестрированных телеграм ботов для выбранной огранизации не найдено. Обратитесь к администратору.",
+                InlineKeyboard = new InlineKeyboardMarkup(buttons)
+            };
+        }
+    }
 }

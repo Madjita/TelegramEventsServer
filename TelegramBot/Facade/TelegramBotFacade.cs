@@ -46,8 +46,15 @@ namespace TelegramBot.Facade
 
     public enum KeyboardCommand
     {
-        PrevPage,
-        NextPage,
+        PageBotTypePrevPage,
+        PageBotTypeNextPage,
+        
+        PageCompanyPrevPage,
+        PageCompanyNextPage,
+        
+        SelectTelegramBot,
+        PageTelegramBotInOrgPrevPage,
+        PageTelegramBotInOrgNextPage,
         
         CanselOperation,
         ExitFromBot,
@@ -73,6 +80,7 @@ namespace TelegramBot.Facade
         StartRegistrationBot,
         StartCreationBot,
         EndRegistrationBot,
+
 
         //
         ApproveCheckPictureFromMenager,
@@ -124,6 +132,7 @@ namespace TelegramBot.Facade
         //Test
         Task<List<List<InlineKeyboardButton>>> PageCompanyButtons(IMediator mediator, User? responceUser, int currentPage = 0, int companiesPerPage = 4);
         Task<List<List<InlineKeyboardButton>>> PageBotTypeButtons(IMediator mediator, User? responceUser,int orgId, int currentPage = 0, int companiesPerPage = 4);
+        Task<List<List<InlineKeyboardButton>>> PageTelegramBotInOrgButtons(IMediator mediator, User? responceUser, int orgId, int currentPage = 0, int companiesPerPage = 4);
         
         //Start buttons
         InlineKeyboardMarkup StartManagerButtons(IMediator mediator, User responceUser, int currentPage = 0, int companiesPerPage = 4);
@@ -259,13 +268,13 @@ namespace TelegramBot.Facade
             {
                 if (currentPage > 0)
                 {
-                    buttons[1].Insert(0, InlineKeyboardButton.WithCallbackData("⬅️", $"{Facade.KeyboardCommand.PrevPage} {currentPage - 1}"));
+                    buttons[1].Insert(0, InlineKeyboardButton.WithCallbackData("⬅️", $"{Facade.KeyboardCommand.PageCompanyPrevPage} {currentPage - 1}"));
                 }
 
                 if (currentPage <= (responsecheckOrganizationCommand.totalRecords / companiesPerPage)-1)
                 {
                     buttons.Add(new List<InlineKeyboardButton>());
-                    buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.NextPage} {currentPage + 1}"));
+                    buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.PageCompanyNextPage} {currentPage + 1}"));
                 }
             }
             
@@ -313,13 +322,13 @@ namespace TelegramBot.Facade
             {
                 if (currentPage > 0)
                 {
-                    buttons[1].Insert(0, InlineKeyboardButton.WithCallbackData("⬅️", $"{Facade.KeyboardCommand.PrevPage} {currentPage - 1}"));
+                    buttons[1].Insert(0, InlineKeyboardButton.WithCallbackData("⬅️", $"{Facade.KeyboardCommand.PageBotTypePrevPage} {currentPage - 1}"));
                 }
 
                 if (currentPage <= (responseCommand.TotalRecords / companiesPerPage)-1)
                 {
                     buttons.Add(new List<InlineKeyboardButton>());
-                    buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.NextPage} {currentPage + 1}"));
+                    buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.PageBotTypeNextPage} {currentPage + 1}"));
                 }
             }
             
@@ -411,6 +420,64 @@ namespace TelegramBot.Facade
             });
             
             return keyboard;
+        }
+        
+        public async Task<List<List<InlineKeyboardButton>>> PageTelegramBotInOrgButtons(IMediator mediator, User? responceUser, int orgId, int currentPage = 0, int companiesPerPage = 4)
+        {
+            var command = new GetSliceTelegramBotByOrgIdQuery()
+            {
+                OrgId = orgId,
+                Skip = currentPage * companiesPerPage,
+                Take = companiesPerPage
+            };
+
+            var responseCommand = await mediator.Send(command);
+
+            List<List<InlineKeyboardButton>> buttons = new();
+            buttons.Add(new List<InlineKeyboardButton>());
+            buttons.Add(new List<InlineKeyboardButton>());
+            
+            // Заполняем кнопки для выбора ботов на текущей странице
+            void FillButtonsForPage(int page)
+            {
+
+                for (int i = 0; i < responseCommand.TelegramBots.Count; i++)
+                {
+                    buttons.Add(new List<InlineKeyboardButton>());
+                    var item = responseCommand.TelegramBots[i];
+                    var button = InlineKeyboardButton.WithCallbackData(item.TelegramBotName, $"{Facade.KeyboardCommand.SelectTelegramBot} {item.Id}");
+                    buttons.LastOrDefault().Add(button);
+                }
+            }
+
+            FillButtonsForPage(currentPage);
+
+            // Добавляем кнопки "назад" и "вперед", если необходимо
+            if (responseCommand.TotalRecords > companiesPerPage)
+            {
+                if (currentPage > 0)
+                {
+                    buttons[1].Insert(0, InlineKeyboardButton.WithCallbackData("⬅️", $"{Facade.KeyboardCommand.PageTelegramBotInOrgPrevPage} {orgId} {currentPage - 1}"));
+                }
+
+                if (currentPage <= (responseCommand.TotalRecords / companiesPerPage)-1)
+                {
+                    buttons.Add(new List<InlineKeyboardButton>());
+                    buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.PageTelegramBotInOrgNextPage} {orgId} {currentPage + 1}"));
+                }
+            }
+            
+            buttons.Add(new List<InlineKeyboardButton>()
+            {
+                InlineKeyboardButton.WithCallbackData("Создать телеграм бота", $"{KeyboardCommand.StartRegistrationBot} {orgId}"),
+            });
+            
+            buttons.Add(new List<InlineKeyboardButton>()
+            {
+                InlineKeyboardButton.WithCallbackData("Завершить", KeyboardCommand.CanselOperation.ToString())
+            });
+
+            return buttons;
         }
     }
 }
