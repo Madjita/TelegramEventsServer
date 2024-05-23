@@ -33,12 +33,19 @@ namespace Workers
         private void Start(TelegramBotEventArgs e)
         {
             TelegramBot.TelegramBot? telegramBot = null;
-
+            
             switch (e.Type)
             {
                 case "PartyTelegramBot":
                     telegramBot = new PartyTelegramBot(e.TelegramBot.Id, e.TelegramBot.TelegramBotName, e.TelegramBot.TelegramBotToken, _logger, _mediator, _scopeFactory);
-                    _ = telegramBot.SendMessage($"Application [MailParserMicroService] is starting.\nIP Addresses:\n{Diagnostic.ConcatenatedIPs}");
+                    try
+                    {
+                        _ = telegramBot.SendMessage($"Application [MailParserMicroService] is starting.\nIP Addresses:\n{Diagnostic.ConcatenatedIPs}");
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger.WriteLine(exception,"[TelegramBotBackgroundService][StartTelegramBotEventHandler] SendMessage exception.");
+                    }
                     break;
             };
 
@@ -64,8 +71,15 @@ namespace Workers
                    if (telegramBot is not null)
                    {
                         _telegramBots.TryAdd(bot.TelegramBotToken, telegramBot);
-                        await telegramBot.SendMessage($"Application [MainManagerTelgramBot][MailParserMicroService] is starting.\nIP Addresses:\n{Diagnostic.ConcatenatedIPs}");
-                    }
+                        try
+                        {
+                            _ = telegramBot.SendMessage($"Application [MainManagerTelgramBot][MailParserMicroService] is starting.\nIP Addresses:\n{Diagnostic.ConcatenatedIPs}");
+                        }
+                        catch (Exception exception)
+                        {
+                            _logger.WriteLine(exception,"[TelegramBotBackgroundService] SendMessage exception.");
+                        }
+                   }
                 }
            }
            catch(Exception ex)

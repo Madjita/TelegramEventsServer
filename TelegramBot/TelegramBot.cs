@@ -19,12 +19,12 @@ namespace TelegramBot
         private static IMyLogger _logger;
         public static IMyLogger Logger => _logger;
 
-        private readonly string _botToken = "6428879038:AAEa8a7GVPqVvfLMx4klC3X2Hi5UCLanTfc"; // Замените на ваш токен бота
-        protected long chatId = 299839047;//299839047 //-мой;//6428879038;//346545352 -лилин; // Замените на ID чата, куда хотите отправить сообщение
-        //6428879038
+        private readonly string _botToken = "testToken"; // Замените на ваш токен бота
+
+        protected long chatId = 299839047;// Замените на ID чата, куда хотите отправить сообщение для отладки
+
         protected long? _chanelPostId = -1002112876204;
-        protected ConcurrentDictionary<long, bool> _chanelPostIdEditMessages = new ConcurrentDictionary<long, bool>();
-        
+
         protected TelegramBotClient _botClient;
         protected CancellationTokenSource _cts = new ();
 

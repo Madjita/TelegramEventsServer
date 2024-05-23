@@ -341,3 +341,5 @@ healthchecksdb
 
 #VS Code settings for debug
 .vscode/
+
+app
