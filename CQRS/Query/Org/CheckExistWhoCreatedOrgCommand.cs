@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace CQRS.Query.CustomerCompany
 {
-    public struct CheckExistWhoCreatedOrgCommand : IRequest<(bool Success, List<Org> customerCompany, int totalRecords)>
+    public record CheckExistWhoCreatedOrgCommand : IRequest<(bool Success, List<Org> customerCompany, int totalRecords)>
     {
         public int WhoRegisterdUsserId { get; set; }
         public int Skip { get; set; }
@@ -20,30 +20,21 @@ namespace CQRS.Query.CustomerCompany
 
         public async Task<(bool Success, List<Org> customerCompany, int totalRecords)> Handle(CheckExistWhoCreatedOrgCommand request, CancellationToken cancellationToken)
         {
-
             try
-            {
-                int totalRecords = db.Org.Where(company => company.WhoRegisterdUsserId == request.WhoRegisterdUsserId && company.IsDeleted == false).Count();
-
-                List<Org> customerCompany = new();
-                if(request.Take >= totalRecords)
+            { 
+                var query = db.Org.Where(company => company.WhoRegisterdUsserId == request.WhoRegisterdUsserId && company.IsDeleted == false);
+                var totalRecords = await query.CountAsync(cancellationToken);
+                query = query.OrderBy(_ => _.Id);
+                if (request.Skip > 0) 
                 {
-                    customerCompany = await db.Org.OrderBy(company => company.Id).Where(company => company.WhoRegisterdUsserId == request.WhoRegisterdUsserId && company.IsDeleted == false).ToListAsync(cancellationToken);
-                }
-                else if (request.Skip > 0)
+                   query = query.Skip(request.Skip); 
+                } 
+                if (request.Take > 0 && request.Take < totalRecords) 
                 {
-                    customerCompany = await db.Org.OrderBy(company => company.Id).Where(company => company.WhoRegisterdUsserId == request.WhoRegisterdUsserId && company.IsDeleted == false).Skip(request.Skip).Take(request.Take).ToListAsync(cancellationToken);
-                }
-                else if(request.Take > 0)
-                {
-                    customerCompany = await db.Org.OrderBy(company => company.Id).Where(company => company.WhoRegisterdUsserId == request.WhoRegisterdUsserId && company.IsDeleted == false).Take(request.Take).ToListAsync(cancellationToken);
-                }
-                else
-                {
-                    customerCompany = await db.Org.OrderBy(company => company.Id).Where(company => company.WhoRegisterdUsserId == request.WhoRegisterdUsserId && company.IsDeleted == false).ToListAsync(cancellationToken);
-                }
-                
-                return (customerCompany.Any(), customerCompany, totalRecords);
+                   query = query.Take(request.Take); 
+                } 
+                var customerCompany = await query.ToListAsync(cancellationToken); 
+                return (customerCompany.Any(), customerCompany, totalRecords); 
             }
             catch (Exception ex)
             {

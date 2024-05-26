@@ -4,7 +4,7 @@ using MediatR;
 
 namespace CQRS.Query;
 
-public struct UpdateWeatherCityQuery : IRequest<(bool Success, WeatherCity? WeatherCity)>
+public record UpdateWeatherCityQuery : IRequest<(bool Success, WeatherCity? WeatherCity)>
 {
     public WeatherCity WeatherCity { get; set; }
 }

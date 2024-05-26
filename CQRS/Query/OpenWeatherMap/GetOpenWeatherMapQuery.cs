@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace CQRS.Query;
 
-public struct GetOpenWeatherMapQuery : IRequest<(bool Success, OpenWeatherMap? OpenWeatherMapDB)>
+public record GetOpenWeatherMapQuery : IRequest<(bool Success, OpenWeatherMap? OpenWeatherMapDB)>
 {
     public string City { get; set; }
 }

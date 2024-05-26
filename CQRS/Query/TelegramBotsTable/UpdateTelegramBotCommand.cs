@@ -6,7 +6,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS;
 
-public struct UpdateTelegramBotCommand : IRequest<(bool Success, TelegramBots? TelegramBot)>
+public record UpdateTelegramBotCommand : IRequest<(bool Success, TelegramBots? TelegramBot)>
 {
     public TelegramBots newBot { get; set; }
 }

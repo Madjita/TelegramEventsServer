@@ -5,7 +5,7 @@ using DataBase.Entities.Entities_DBContext;
 
 namespace CQRS.Query.Events;
 
-public struct CheckExistEventsCommand : IRequest<(bool Success, Event? newEvent)>
+public record CheckExistEventsCommand : IRequest<(bool Success, Event? newEvent)>
 {
     public string Name { get; set; }
     public int OrgId { get; set; }

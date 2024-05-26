@@ -4,7 +4,7 @@ using DataBase.Entities.Entities_DBContext;
 using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query;
-public struct GetUserAllQuery : IRequest<List<User>>
+public record GetUserAllQuery : IRequest<List<User>>
 {
 }
 

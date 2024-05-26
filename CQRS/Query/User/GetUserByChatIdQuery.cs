@@ -5,7 +5,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query
 {
-    public struct GetUserByChatIdQuery : IRequest<User?>
+    public record GetUserByChatIdQuery : IRequest<User?>
     {
         public long TelegramChatId { get; set; }
         public bool IsDeleted { get; set; }

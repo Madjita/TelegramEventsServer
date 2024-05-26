@@ -22,8 +22,8 @@ namespace TelegramBot;
 
 public partial class TelegramBot : IAsyncDisposable
 {
-    
-    protected virtual async Task HandleUpdateAsync(ITelegramBotClient botClient, Telegram.Bot.Types.Update update, CancellationToken cancellationToken)
+    protected virtual async Task HandleUpdateAsync(ITelegramBotClient botClient, Telegram.Bot.Types.Update update,
+        CancellationToken cancellationToken)
     {
         switch (update.Type)
         {
@@ -38,51 +38,53 @@ public partial class TelegramBot : IAsyncDisposable
                 break;
 
             case UpdateType.MyChatMember:
-                if (update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Administrator && update.MyChatMember.Chat.Title ==  "PerfectoParty")
+                if (update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Administrator &&
+                    update.MyChatMember.Chat.Title == "PerfectoParty")
                 {
                     _chanelPostId = update.MyChatMember.Chat.Id;
                 }
-                else if(update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Left)
+                else if (update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Left)
                 {
                     _chanelPostId = null;
                 }
+
                 break;
             case UpdateType.ChannelPost:
-                  /*
-                InlineKeyboardMarkup? inlineKeyboard = new(
-                  new[] {
-                    new[] { InlineKeyboardButton.WithCallbackData("Фейк",Facade.KeyboardCommand.FaildCheckPictureFromMenager.ToString()) },
-                    new[] { InlineKeyboardButton.WithCallbackData("Подтверить", Facade.KeyboardCommand.ApproveCheckPictureFromMenager.ToString()) }
-                  }
-               );
+                /*
+              InlineKeyboardMarkup? inlineKeyboard = new(
+                new[] {
+                  new[] { InlineKeyboardButton.WithCallbackData("Фейк",Facade.KeyboardCommand.FaildCheckPictureFromMenager.ToString()) },
+                  new[] { InlineKeyboardButton.WithCallbackData("Подтверить", Facade.KeyboardCommand.ApproveCheckPictureFromMenager.ToString()) }
+                }
+             );
 
 
-                await botClient.SendTextMessageAsync(
-                                chatId: update.ChannelPost.Chat.Id,
-                                text: "test response",
-                                replyMarkup: inlineKeyboard,
-                                cancellationToken: cancellationToken);*/
-                break; 
+              await botClient.SendTextMessageAsync(
+                              chatId: update.ChannelPost.Chat.Id,
+                              text: "test response",
+                              replyMarkup: inlineKeyboard,
+                              cancellationToken: cancellationToken);*/
+                break;
         }
-
     }
 
-    protected virtual async Task HandleButton(ITelegramBotClient botClient, CallbackQuery query, CancellationToken cancellationToken)
+    protected virtual async Task HandleButton(ITelegramBotClient botClient, CallbackQuery query,
+        CancellationToken cancellationToken)
     {
         var telegramUser = new User
         {
-           TelegramChatId = query.Message!.Chat.Id,
-           MessageId = query.Message.MessageId,
-           FirstName = query.Message.Chat.FirstName,
-           LastName = query.Message.Chat.LastName,
-           UserName = query.Message.Chat.Username,
+            TelegramChatId = query.Message!.Chat.Id,
+            MessageId = query.Message.MessageId,
+            FirstName = query.Message.Chat.FirstName,
+            LastName = query.Message.Chat.LastName,
+            UserName = query.Message.Chat.Username,
         };
 
         var parametrs = query.Data?.Split(" ") ?? new string[] { };
         var command = parametrs[0];
         string responseText = string.Empty;
 
-        if(Enum.TryParse<Facade.KeyboardCommand>(command, out var parsedEnum))
+        if (Enum.TryParse<Facade.KeyboardCommand>(command, out var parsedEnum))
         {
             switch (parsedEnum)
             {
@@ -93,246 +95,267 @@ public partial class TelegramBot : IAsyncDisposable
                 case Facade.KeyboardCommand.StartRegistrationYourSelf:
                 {
                     responseText = $"Танцуете ?";
-                    InlineKeyboardMarkup? inlineKeyboard = new (
-                       new[] {
-                               new[] { InlineKeyboardButton.WithCallbackData("Не танцующий",Facade.KeyboardCommand.StartRegistrationNoDancer.ToString()) },
-                               new[] { InlineKeyboardButton.WithCallbackData("Танцующий", Facade.KeyboardCommand.StartRegistrationDancer.ToString()) }
-                       }
+                    InlineKeyboardMarkup? inlineKeyboard = new(
+                        new[]
+                        {
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData("Не танцующий",
+                                    Facade.KeyboardCommand.StartRegistrationNoDancer.ToString())
+                            },
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData("Танцующий",
+                                    Facade.KeyboardCommand.StartRegistrationDancer.ToString())
+                            }
+                        }
                     );
-                    
+
                     await botClient.SendTextMessageAsync(
-                           chatId: telegramUser.TelegramChatId,
-                           text: responseText,
-                           replyMarkup: inlineKeyboard,
-                           cancellationToken: cancellationToken);
+                        chatId: telegramUser.TelegramChatId,
+                        text: responseText,
+                        replyMarkup: inlineKeyboard,
+                        cancellationToken: cancellationToken);
                     break;
                 }
                 case Facade.KeyboardCommand.StartRegistrationDancer:
+                {
+                    responseText = $"Введите Фамилию Имя Отчетсво и номер телефона через пробелы.";
+
+                    var newContext = new MessageContext.TelegramBotMessageContext()
                     {
+                        LastCommand = command,
+                        State = Facade.TelegramUserState.WritedFIOandPhoneYourSelf,
+                        TelegramUser = telegramUser,
+                        LastMessage = command,
+                    };
 
-                        responseText = $"Введите Фамилию Имя Отчетсво и номер телефона через пробелы.";
-
-                        var newContext = new MessageContext.TelegramBotMessageContext()
-                        {
-                            LastCommand = command,
-                            State = Facade.TelegramUserState.WritedFIOandPhoneYourSelf,
-                            TelegramUser = telegramUser,
-                            LastMessage = command,
-                        };
-
-                        _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
-                        await botClient.SendTextMessageAsync(
-                                chatId: telegramUser.TelegramChatId,
-                                text: responseText,
-                                cancellationToken: cancellationToken);
-                        break;
-                    }
+                    _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
+                    await botClient.SendTextMessageAsync(
+                        chatId: telegramUser.TelegramChatId,
+                        text: responseText,
+                        cancellationToken: cancellationToken);
+                    break;
+                }
                 case Facade.KeyboardCommand.EditRegistrationFIOandPhone:
+                {
+                    TelegramBotMessageContext? messageContext = null;
+                    if (!_messageContexts.TryGetValue(telegramUser.TelegramChatId, out messageContext))
                     {
-                        TelegramBotMessageContext? messageContext = null;
-                        if(!_messageContexts.TryGetValue(telegramUser.TelegramChatId, out messageContext))
-                        {
-                            await botClient.SendTextMessageAsync(
-                               chatId: telegramUser.TelegramChatId,
-                               text: "Ошибка",
-                               cancellationToken: cancellationToken);
-                            break;
-                        }
-                        
-                        responseText = $"Отредактируйте и пришлите мне Фамилию Имя Отчетсво и номер телефона через пробелы.\n" +
-                                       "Вы вводили:\n"+
-                                       messageContext.LastMessage;
+                        await botClient.SendTextMessageAsync(
+                            chatId: telegramUser.TelegramChatId,
+                            text: "Ошибка",
+                            cancellationToken: cancellationToken);
+                        break;
+                    }
 
-                        messageContext.State = Facade.TelegramUserState.EditRegistrationFIOandPhone;
+                    responseText =
+                        $"Отредактируйте и пришлите мне Фамилию Имя Отчетсво и номер телефона через пробелы.\n" +
+                        "Вы вводили:\n" +
+                        messageContext.LastMessage;
+
+                    messageContext.State = Facade.TelegramUserState.EditRegistrationFIOandPhone;
+
+                    await botClient.SendTextMessageAsync(
+                        chatId: telegramUser.TelegramChatId,
+                        text: responseText,
+                        cancellationToken: cancellationToken);
+                    break;
+                }
+                case Facade.KeyboardCommand.BreakRegistration:
+                {
+                    if (_messageContexts.TryGetValue(telegramUser.TelegramChatId, out var value))
+                    {
+                        _messageContexts.TryRemove(
+                            new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, value));
+                        responseText = "Регистрация остановленна.";
+                        InlineKeyboardMarkup? inlineKeyboard = new(
+                            new[]
+                            {
+                                new[]
+                                {
+                                    InlineKeyboardButton.WithCallbackData("Не танцующий",
+                                        Facade.KeyboardCommand.StartRegistrationNoDancer.ToString())
+                                },
+                                new[]
+                                {
+                                    InlineKeyboardButton.WithCallbackData("Танцующий",
+                                        Facade.KeyboardCommand.StartRegistrationDancer.ToString())
+                                }
+                            }
+                        );
 
                         await botClient.SendTextMessageAsync(
-                                chatId: telegramUser.TelegramChatId,
-                                text: responseText,
-                                cancellationToken: cancellationToken);
-                        break;
+                            chatId: telegramUser.TelegramChatId,
+                            text: responseText,
+                            replyMarkup: inlineKeyboard,
+                            cancellationToken: cancellationToken);
                     }
-                case Facade.KeyboardCommand.BreakRegistration:
-                    {
-                        if(_messageContexts.TryGetValue(telegramUser.TelegramChatId, out var value))
-                        {
-                            _messageContexts.TryRemove(new KeyValuePair<long, TelegramBotMessageContext>( telegramUser.TelegramChatId, value));
-                            responseText = "Регистрация остановленна.";
-                            InlineKeyboardMarkup? inlineKeyboard = new(
-                               new[] {
-                                   new[] { InlineKeyboardButton.WithCallbackData("Не танцующий",Facade.KeyboardCommand.StartRegistrationNoDancer.ToString()) },
-                                   new[] { InlineKeyboardButton.WithCallbackData("Танцующий", Facade.KeyboardCommand.StartRegistrationDancer.ToString()) }
-                               }
-                           );
 
-                            await botClient.SendTextMessageAsync(
-                                   chatId: telegramUser.TelegramChatId,
-                                   text: responseText,
-                                   replyMarkup: inlineKeyboard,
-                                   cancellationToken: cancellationToken);
-                        }
-
-                        break;
-                    }
+                    break;
+                }
                 case Facade.KeyboardCommand.ApproveRegistrationFIOandPhone:
+                {
+                    if (_messageContexts.TryGetValue(telegramUser.TelegramChatId, out var value))
                     {
-                        if (_messageContexts.TryGetValue(telegramUser.TelegramChatId, out var value))
+                        value.State = Facade.TelegramUserState.SendedCheckPicture;
+
+                        var today = DateTime.Now;
+                        var PartyDate = new DateTime(DateTime.Now.Year, 12, 22);
+
+                        responseText = $"Текущая дата: {today.ToString("dd:MM:yyyy")}\r\n" +
+                                       "Стоимость входа:\r\n";
+
+                        if (DateTime.Now >= PartyDate)
                         {
-                            value.State = Facade.TelegramUserState.SendedCheckPicture;
-
-                            var today = DateTime.Now;
-                            var PartyDate = new DateTime(DateTime.Now.Year, 12, 22);
-
-                            responseText = $"Текущая дата: {today.ToString("dd:MM:yyyy")}\r\n"+
-                                            "Стоимость входа:\r\n";
-
-                            if (DateTime.Now >= PartyDate)
-                            {
-                                responseText += "800₽ - при оплате онлайн 22.12 или на входе\r\n";
-                            }
-                            else
-                            {
-                                responseText +=
-                                    "600₽ - при оплате онлайн до 22.12 с репостом записи\r\n" +
-                                    "700₽ - при оплате онлайн до 22.12 без репоста\r\n";
-                            }
-
-                            responseText += "Реквезиты:\r\n" +
-                                            "По номеру телефона: 89832068482\r\n" +
-                                            "Номер карты: 4011111111111112\r\n"+
-                                            "\r\n"+
-                                            "После перевода, прикрепите фотографию оплаты.";
-
-                            await botClient.SendTextMessageAsync(
-                                   chatId: telegramUser.TelegramChatId,
-                                   text: responseText,
-                                   cancellationToken: cancellationToken);
-                        }
-
-                        break;
-                    }
-                case Facade.KeyboardCommand.FaildCheckPictureFromMenager:
-                    {
-                        if(query.Message.Caption is not null)
-                        {
-                            await botClient.EditMessageCaptionAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               caption: $"{query.Message.Caption.Replace("_", "\\_")}\n *[Фейк]*",
-                               parseMode: ParseMode.Markdown);
-                        }
-                        else if (query.Message.Text is not null)
-                        {
-                            await botClient.EditMessageTextAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               text: $"{query.Message.Text.Replace("_", "\\_")}\n *[Фейк]*",
-                               parseMode: ParseMode.Markdown);
-                        }
-                        
-                        break;
-                    }
-                case Facade.KeyboardCommand.ApproveCheckPictureFromMenager:
-                    {
-                        if (query.Message.Caption is not null)
-                        {
-                            await botClient.EditMessageCaptionAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               caption: $"{query.Message.Caption.Replace("_", "\\_")}\n *[Подтвержден]*",
-                               replyMarkup: null,
-                               parseMode: ParseMode.Markdown);
-                        }
-                        else if (query.Message.Text is not null)
-                        {
-                            await botClient.EditMessageTextAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               text: $"{query.Message.Text.Replace("_", "\\_")}\n *[Подтвержден]*",
-                               parseMode: ParseMode.Markdown);
-                        }
-                        break;
-                    }
-                case Facade.KeyboardCommand.ExitFromBot:
-                    {
-                        //Выйти из чата
-                        var response = await _telegramBotFacade.Exit(this, telegramUser);
-
-                        if(response.InlineKeyboard is not null)
-                        {
-                            await botClient.EditMessageTextAsync(
-                              chatId: query.Message.Chat.Id,
-                              messageId: query.Message.MessageId,
-                              text: response.Message,
-                              replyMarkup: response.InlineKeyboard);
+                            responseText += "800₽ - при оплате онлайн 22.12 или на входе\r\n";
                         }
                         else
                         {
-                            await botClient.EditMessageTextAsync(
-                              chatId: query.Message.Chat.Id,
-                              messageId: query.Message.MessageId,
-                              text: $"*{response.Message}*",
-                              parseMode: ParseMode.Markdown);
+                            responseText +=
+                                "600₽ - при оплате онлайн до 22.12 с репостом записи\r\n" +
+                                "700₽ - при оплате онлайн до 22.12 без репоста\r\n";
                         }
-                       
 
-                        break;
+                        responseText += "Реквезиты:\r\n" +
+                                        "По номеру телефона: 89832068482\r\n" +
+                                        "Номер карты: 4011111111111112\r\n" +
+                                        "\r\n" +
+                                        "После перевода, прикрепите фотографию оплаты.";
+
+                        await botClient.SendTextMessageAsync(
+                            chatId: telegramUser.TelegramChatId,
+                            text: responseText,
+                            cancellationToken: cancellationToken);
                     }
+
+                    break;
+                }
+                case Facade.KeyboardCommand.FaildCheckPictureFromMenager:
+                {
+                    if (query.Message.Caption is not null)
+                    {
+                        await botClient.EditMessageCaptionAsync(
+                            chatId: query.Message.Chat.Id,
+                            messageId: query.Message.MessageId,
+                            caption: $"{query.Message.Caption.Replace("_", "\\_")}\n *[Фейк]*",
+                            parseMode: ParseMode.Markdown);
+                    }
+                    else if (query.Message.Text is not null)
+                    {
+                        await botClient.EditMessageTextAsync(
+                            chatId: query.Message.Chat.Id,
+                            messageId: query.Message.MessageId,
+                            text: $"{query.Message.Text.Replace("_", "\\_")}\n *[Фейк]*",
+                            parseMode: ParseMode.Markdown);
+                    }
+
+                    break;
+                }
+                case Facade.KeyboardCommand.ApproveCheckPictureFromMenager:
+                {
+                    if (query.Message.Caption is not null)
+                    {
+                        await botClient.EditMessageCaptionAsync(
+                            chatId: query.Message.Chat.Id,
+                            messageId: query.Message.MessageId,
+                            caption: $"{query.Message.Caption.Replace("_", "\\_")}\n *[Подтвержден]*",
+                            replyMarkup: null,
+                            parseMode: ParseMode.Markdown);
+                    }
+                    else if (query.Message.Text is not null)
+                    {
+                        await botClient.EditMessageTextAsync(
+                            chatId: query.Message.Chat.Id,
+                            messageId: query.Message.MessageId,
+                            text: $"{query.Message.Text.Replace("_", "\\_")}\n *[Подтвержден]*",
+                            parseMode: ParseMode.Markdown);
+                    }
+
+                    break;
+                }
+                case Facade.KeyboardCommand.ExitFromBot:
+                {
+                    //Выйти из чата
+                    var response = await _telegramBotFacade.Exit(this, telegramUser);
+
+                    if (response.InlineKeyboard is not null)
+                    {
+                        await botClient.EditMessageTextAsync(
+                            chatId: query.Message.Chat.Id,
+                            messageId: query.Message.MessageId,
+                            text: response.Message,
+                            replyMarkup: response.InlineKeyboard);
+                    }
+                    else
+                    {
+                        await botClient.EditMessageTextAsync(
+                            chatId: query.Message.Chat.Id,
+                            messageId: query.Message.MessageId,
+                            text: $"*{response.Message}*",
+                            parseMode: ParseMode.Markdown);
+                    }
+
+
+                    break;
+                }
                 case Facade.KeyboardCommand.ExitFromBotNo:
-                    {
-                        await botClient.EditMessageTextAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               text: "Не хотите, как хотите.");
-                        break;
-                    }
+                {
+                    await botClient.EditMessageTextAsync(
+                        chatId: query.Message.Chat.Id,
+                        messageId: query.Message.MessageId,
+                        text: "Не хотите, как хотите.");
+                    break;
+                }
                 case Facade.KeyboardCommand.ExitFromBotYes:
-                    {
-                        //Активировать пользователя.
-                        var response = await _telegramBotFacade.ActivateUser(this, telegramUser);
+                {
+                    //Активировать пользователя.
+                    var response = await _telegramBotFacade.ActivateUser(this, telegramUser);
 
-                        await botClient.EditMessageTextAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               text: response.Message,
-                               replyMarkup: response.InlineKeyboard);
+                    await botClient.EditMessageTextAsync(
+                        chatId: query.Message.Chat.Id,
+                        messageId: query.Message.MessageId,
+                        text: response.Message,
+                        replyMarkup: response.InlineKeyboard);
 
-                        break;
-                    }
+                    break;
+                }
                 case Facade.KeyboardCommand.StartRegistrationCompany:
+                {
+                    string responceText = "Регистрация компании.\n"
+                                          + "Введите название компании:";
+
+                    var newContext = new MessageContext.TelegramBotMessageContext()
                     {
+                        LastCommand = command,
+                        State = Facade.TelegramUserState.RegistrationCustomerCompany,
+                        TelegramUser = telegramUser,
+                        LastMessage = responceText,
+                    };
 
-                        string responceText = "Регистрация компании.\n"
-                         + "Введите название компании:";
+                    List<List<InlineKeyboardButton>> buttons = new();
+                    buttons.Add(new List<InlineKeyboardButton>());
+                    buttons[0].Add(
+                        InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}"));
+                    InlineKeyboardMarkup? inlineKeyboard = new(buttons);
 
-                        var newContext = new MessageContext.TelegramBotMessageContext()
-                        {
-                            LastCommand = command,
-                            State = Facade.TelegramUserState.RegistrationCustomerCompany,
-                            TelegramUser = telegramUser,
-                            LastMessage = responceText,
-                        };
-                        
-                        List<List<InlineKeyboardButton>> buttons = new();
-                        buttons.Add(new List<InlineKeyboardButton>());
-                        buttons[0].Add(InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}"));
-                        InlineKeyboardMarkup? inlineKeyboard = new(buttons);
+                    var added = _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
 
-                        var added = _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
-
-                        await botClient.EditMessageTextAsync(
-                                chatId: telegramUser.TelegramChatId,
-                                messageId: query.Message.MessageId,
-                                text: responceText,
-                                replyMarkup: inlineKeyboard,
-                                cancellationToken: cancellationToken);
-                        break;
-                    }
+                    await botClient.EditMessageTextAsync(
+                        chatId: telegramUser.TelegramChatId,
+                        messageId: query.Message.MessageId,
+                        text: responceText,
+                        replyMarkup: inlineKeyboard,
+                        cancellationToken: cancellationToken);
+                    break;
+                }
                 case Facade.KeyboardCommand.PageCompanyPrevPage:
                 case Facade.KeyboardCommand.PageCompanyNextPage:
                 {
                     var userFromBD = await FindUser(telegramUser);
                     if (userFromBD is null) break;
-                    var buttons = await _telegramBotFacade.PageCompanyButtons(_mediator, userFromBD, parametrs[1].ToInt());
+                    var buttons =
+                        await _telegramBotFacade.PageCompanyButtons(_mediator, userFromBD, parametrs[1].ToInt());
                     InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup(buttons);
                     await botClient.EditMessageTextAsync(
                         chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
@@ -348,7 +371,8 @@ public partial class TelegramBot : IAsyncDisposable
                     var userFromBD = await FindUser(telegramUser);
                     if (userFromBD is null) break;
 
-                    var buttons = await _telegramBotFacade.PageTelegramBotInOrgButtons(_mediator, userFromBD, parametrs[1].ToInt(),parametrs[2].ToInt());
+                    var buttons = await _telegramBotFacade.PageTelegramBotInOrgButtons(_mediator, userFromBD,
+                        parametrs[1].ToInt(), parametrs[2].ToInt());
 
                     InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup(buttons);
 
@@ -368,22 +392,23 @@ public partial class TelegramBot : IAsyncDisposable
                     var telegamBotId = parametrs[1].ToInt();
 
                     var responceText = "Тут должны быть настройки выбранного бота.";
-                    
+
                     //1) Добавить кнопку отображения событий.
-                    
+
                     List<List<InlineKeyboardButton>> buttons = new();
                     buttons.Add(new List<InlineKeyboardButton>());
-                    buttons.FirstOrDefault()?.Add(InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}"));
-                    
+                    buttons.FirstOrDefault()
+                        ?.Add(InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}"));
+
                     InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(buttons);
-                    
+
                     await botClient.EditMessageTextAsync(
                         chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
                         messageId: query.Message.MessageId,
                         text: $"{responceText}",
                         cancellationToken: cancellationToken,
                         replyMarkup: inlineKeyboard);
-                    
+
                     break;
                 }
                 case Facade.KeyboardCommand.SelectCompany:
@@ -394,39 +419,40 @@ public partial class TelegramBot : IAsyncDisposable
                     var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
                     var organization = await _mediator.Send(commandGetOrg);
                     string responceText = string.Empty;
-                    
+
                     if (!organization.Success)
                     {
-                        responceText  = $"Выбранной компании не сущесвтует в БД.";
+                        responceText = $"Выбранной компании не сущесвтует в БД.";
                         await botClient.EditMessageTextAsync(
-                              chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                              messageId: query.Message.MessageId,
-                              text: responceText,
-                              cancellationToken: cancellationToken);
+                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                            messageId: query.Message.MessageId,
+                            text: responceText,
+                            cancellationToken: cancellationToken);
                     }
                     else
                     {
                         responceText = $"Выбранна компания: {organization.customerCompany.Name}\n"
-                                       +"Созданные боты:\n";
-                        
-                        var buttons = await _telegramBotFacade.PageTelegramBotInOrgButtons(_mediator, telegramUser, organization.customerCompany.Id);
+                                       + "Созданные боты:\n";
+
+                        var buttons = await _telegramBotFacade.PageTelegramBotInOrgButtons(_mediator, telegramUser,
+                            organization.customerCompany.Id);
                         InlineKeyboardMarkup? inlineKeyboard = new(buttons);
                         await botClient.EditMessageTextAsync(
-                          chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                          messageId: query.Message.MessageId,
-                          text: $"{responceText}",
-                          cancellationToken: cancellationToken,
-                          replyMarkup: inlineKeyboard);
+                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                            messageId: query.Message.MessageId,
+                            text: $"{responceText}",
+                            cancellationToken: cancellationToken,
+                            replyMarkup: inlineKeyboard);
                     }
+
                     break;
                 }
                 case Facade.KeyboardCommand.SelectAlreadyRegistrationCompany:
                 {
-                   
                     var response = await SelectCompany(telegramUser);
-                    
+
                     var responceText = response.Message ?? "Ошибка";
-                    
+
                     var newContext = new MessageContext.TelegramBotMessageContext()
                     {
                         LastCommand = command,
@@ -436,7 +462,7 @@ public partial class TelegramBot : IAsyncDisposable
                     };
 
                     var added = _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
-                    
+
                     await botClient.EditMessageTextAsync(
                         chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
                         messageId: query.Message.MessageId,
@@ -453,7 +479,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     if (!organization.Success)
                     {
-                        responceText  = $"Выбранной компании не сущесвтует в БД.";
+                        responceText = $"Выбранной компании не сущесвтует в БД.";
 
                         await botClient.EditMessageTextAsync(
                             chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
@@ -467,7 +493,7 @@ public partial class TelegramBot : IAsyncDisposable
                         //1) Показываем кнопку Зарегестрировать телеграм бота
                         //2) Отображаем доступные типы телеграм ботов
                         var response = await SelectTypeBot(telegramUser, organization.customerCompany.Id);
-                        
+
                         responceText = response.Message ?? "Ошибка";
 
                         await botClient.EditMessageTextAsync(
@@ -476,9 +502,90 @@ public partial class TelegramBot : IAsyncDisposable
                             text: responceText,
                             replyMarkup: response.InlineKeyboard,
                             cancellationToken: cancellationToken);
-
                     }
-                    
+
+                    break;
+                }
+                case Facade.KeyboardCommand.SettingsAdministratorsInOrg:
+                {
+                    // Реализовать отображение кнопок настроек администаторов в текущей организации
+                    // 1) Текущие администраторы (список)
+                    // 2) Кнопка Добавить администратора по вводу имени пользователя телеграмма.
+                    string responceText = string.Empty;
+                    var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
+                    var organization = await _mediator.Send(commandGetOrg);
+
+                    //Получить список текущих администраторов.
+                    responceText = $"Организация: {organization.customerCompany?.Name}\n"
+                                   + "Администраторы:\n";
+
+                    var buttons = await _telegramBotFacade.PageAdminUsersInOrgButtons(_mediator,
+                        telegramUser,
+                        organization.customerCompany.Id);
+
+                    InlineKeyboardMarkup? inlineKeyboard = new(buttons);
+                    await botClient.EditMessageTextAsync(
+                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                        messageId: query.Message.MessageId,
+                        text: $"{responceText}",
+                        cancellationToken: cancellationToken,
+                        replyMarkup: inlineKeyboard);
+
+                    break;
+                }
+                case Facade.KeyboardCommand.PageAdministratorInOrgPrevPage:
+                case Facade.KeyboardCommand.PageAdministratorInOrgNextPage:
+                {
+                    var userFromBD = await FindUser(telegramUser);
+                    if (userFromBD is null) break;
+
+                    var buttons = await _telegramBotFacade.PageAdminUsersInOrgButtons(_mediator, userFromBD,
+                        parametrs[1].ToInt(), parametrs[2].ToInt());
+
+                    InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup(buttons);
+
+                    await botClient.EditMessageTextAsync(
+                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                        messageId: query.Message.MessageId,
+                        text: query.Message.Text,
+                        replyMarkup: inlineKeyboardMarkup,
+                        cancellationToken: cancellationToken);
+
+                    break;
+                }
+                case Facade.KeyboardCommand.AddAdministratorInOrg:
+                {
+                    //Реализовать логику вписывания Ник нейма пользователя, чтоб потом найти его в базе и добавить к организации.
+                    var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
+                    var responceText =
+                        "Реализовать логику вписывания Ник нейма пользователя, чтоб потом найти его в базе и добавить к организации.";
+
+                    var newContext = new MessageContext.TelegramBotMessageContext()
+                    {
+                        LastCommand = command,
+                        State = Facade.TelegramUserState.WriteAdministratorNikNameForAddInOrg,
+                        TelegramUser = telegramUser,
+                        LastMessage = command,
+                        Org = new Org()
+                        {
+                            Id = commandGetOrg.Id
+                        }
+                    };
+                    _messageContexts.AddOrUpdate(telegramUser.TelegramChatId, newContext,
+                        (existingKey, existingValue) => newContext);
+
+                    //1) Добавить кнопку отображения событий.
+                    List<List<InlineKeyboardButton>> buttons = new();
+                    AddButtonCansel(buttons);
+
+                    InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(buttons);
+
+                    await botClient.EditMessageTextAsync(
+                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                        messageId: query.Message.MessageId,
+                        text: $"{responceText}",
+                        cancellationToken: cancellationToken,
+                        replyMarkup: inlineKeyboard);
                     break;
                 }
                 case Facade.KeyboardCommand.SelectBotType:
@@ -492,7 +599,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     if (!organization.Success)
                     {
-                        responceText  = $"Выбранной компании не сущесвтует в БД.";
+                        responceText = $"Выбранной компании не сущесвтует в БД.";
 
                         await botClient.EditMessageTextAsync(
                             chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
@@ -505,6 +612,7 @@ public partial class TelegramBot : IAsyncDisposable
                         // var telegramBotByTypeBotId = new GetAllTelegramBotByOrgIdQuery() { OrgId = organization.customerCompany.Id };
                         // var telegramBots = await _mediator.Send(telegramBotByOrgId);
                     }
+
                     break;
                 }
                 case Facade.KeyboardCommand.PageBotTypePrevPage:
@@ -512,7 +620,8 @@ public partial class TelegramBot : IAsyncDisposable
                 {
                     var userFromBD = await FindUser(telegramUser);
                     if (userFromBD is null) break;
-                    var buttons = await _telegramBotFacade.PageBotTypeButtons(_mediator, userFromBD, parametrs[1].ToInt());
+                    var buttons =
+                        await _telegramBotFacade.PageBotTypeButtons(_mediator, userFromBD, parametrs[1].ToInt());
                     InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup(buttons);
                     await botClient.EditMessageTextAsync(
                         chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
@@ -526,31 +635,32 @@ public partial class TelegramBot : IAsyncDisposable
                 {
                     //Выбранная организация и тип создаваемого бота
                     //1) Идем создавать бота
-                    
+
                     var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
                     var organization = await _mediator.Send(commandGetOrg);
-                    
+
                     //Берем тип
                     var telegramBotTypeId = parametrs[2].ToInt();
 
                     //Введите информацию для регестриации бота
-                    var responceText =  "1) Перейдите в @BotFather:\n"
-                                        + "2) Введите или выбирите из меню /newbot\n"
-                                        + "3) Выбирите бота /mybots\n"
-                                        + "4) Нажмите на кнпоку \"API Token\" и скопируйте токен\n"
-                                        + "5) Введите информацию для регистрации вашего телеграм ботам в системе через *;*\n\n\n"
-                                        + "Пример:\n"
-                                        + "@TestBot; token\n\n"
-                                        + "Где:\n"
-                                        + "@TestBot => *название бота желательно через @*\n"
-                                        + "token => *ваш скопированный из @BotFather токен*";
-                    
+                    var responceText = "1) Перейдите в @BotFather:\n"
+                                       + "2) Введите или выбирите из меню /newbot\n"
+                                       + "3) Выбирите бота /mybots\n"
+                                       + "4) Нажмите на кнпоку \"API Token\" и скопируйте токен\n"
+                                       + "5) Введите информацию для регистрации вашего телеграм ботам в системе через *;*\n\n\n"
+                                       + "Пример:\n"
+                                       + "@TestBot; token\n\n"
+                                       + "Где:\n"
+                                       + "@TestBot => *название бота желательно через @*\n"
+                                       + "token => *ваш скопированный из @BotFather токен*";
+
                     List<List<InlineKeyboardButton>> buttons = new();
                     buttons.Add(new List<InlineKeyboardButton>());
-                    buttons.FirstOrDefault()?.Add(InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}"));
-                    
+                    buttons.FirstOrDefault()
+                        ?.Add(InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}"));
+
                     InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup(buttons);
-                    
+
                     var newContext = new MessageContext.TelegramBotMessageContext()
                     {
                         LastCommand = command,
@@ -565,7 +675,7 @@ public partial class TelegramBot : IAsyncDisposable
                     {
                         _messageContexts[telegramUser.TelegramChatId] = newContext;
                     }
-                    
+
                     await botClient.EditMessageTextAsync(
                         chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
                         messageId: query.Message.MessageId,
@@ -577,35 +687,36 @@ public partial class TelegramBot : IAsyncDisposable
                     break;
                 }
                 case Facade.KeyboardCommand.EndRegistrationBot:
-                { 
+                {
                     break;
                 }
                 case Facade.KeyboardCommand.CanselOperation:
-                {   
-                    _messageContexts.TryRemove(new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, null));
-                    
+                {
+                    _messageContexts.TryRemove(
+                        new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, null));
+
                     //Определить пользователь пришел первый раз или уже существует в системе ?
                     var responce = await Start(telegramUser);
 
                     var responceText = responce.Message ?? "Ошибка";
-                    
+
                     await botClient.EditMessageTextAsync(
                         chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
                         messageId: query.Message.MessageId,
                         text: responceText,
                         cancellationToken: cancellationToken,
                         replyMarkup: responce.InlineKeyboard);
-                    
+
                     break;
                 }
             }
-
         }
 
         return;
     }
 
-    protected virtual async Task HandleMessage(ITelegramBotClient botClient, Telegram.Bot.Types.Update update, CancellationToken cancellationToken)
+    protected virtual async Task HandleMessage(ITelegramBotClient botClient, Telegram.Bot.Types.Update update,
+        CancellationToken cancellationToken)
     {
         User telegramUser = null;
 
@@ -616,7 +727,8 @@ public partial class TelegramBot : IAsyncDisposable
         if (message.Text is not { } && message.Photo is { } && message.Photo.Length > 0)
         {
             //Получили только фотку.
-            Logger.WriteLine(MyLoggerNamespace.Enums.MessageType.Info, $"Received only photo message from FirstName: [{message.Chat.FirstName}]. LastName: [{message.Chat.LastName}]. ChatId {message.Chat.Id}.");
+            Logger.WriteLine(MyLoggerNamespace.Enums.MessageType.Info,
+                $"Received only photo message from FirstName: [{message.Chat.FirstName}]. LastName: [{message.Chat.LastName}]. ChatId {message.Chat.Id}.");
 
             telegramUser = new User
             {
@@ -635,12 +747,13 @@ public partial class TelegramBot : IAsyncDisposable
         if (message.Text is not { } messageText)
             return;
 
-        Logger.WriteLine(MyLoggerNamespace.Enums.MessageType.Info, $"Received a '{messageText}' message from FirstName: [{message.Chat.FirstName}]. LastName: [{message.Chat.LastName}]. ChatId {message.Chat.Id}.");
+        Logger.WriteLine(MyLoggerNamespace.Enums.MessageType.Info,
+            $"Received a '{messageText}' message from FirstName: [{message.Chat.FirstName}]. LastName: [{message.Chat.LastName}]. ChatId {message.Chat.Id}.");
 
         telegramUser = new User
         {
             TelegramChatId = message.Chat.Id,
-            MessageId=  message.MessageId,
+            MessageId = message.MessageId,
             FirstName = message.Chat.FirstName,
             LastName = message.Chat.LastName,
             UserName = message.Chat.Username,
@@ -648,13 +761,13 @@ public partial class TelegramBot : IAsyncDisposable
 
 
         CommandParser(botClient, message, messageText, telegramUser, cancellationToken);
-
     }
 
-   //TODO: вынести в отдельный статически класс.
-    protected virtual async void CommandParser(ITelegramBotClient botClient, Message message, string messageText, User telegramUser, CancellationToken cancellationToken = default, bool adminCommand = false, string[]? parametrs = null)
+    //TODO: вынести в отдельный статически класс.
+    protected virtual async void CommandParser(ITelegramBotClient botClient, Message message, string messageText,
+        User telegramUser, CancellationToken cancellationToken = default, bool adminCommand = false,
+        string[]? parametrs = null)
     {
-
         var replyKeyboardRemove = new ReplyKeyboardRemove();
         Message? sentMessage = null;
         InlineKeyboardMarkup? inlineKeyboard = null;
@@ -672,17 +785,17 @@ public partial class TelegramBot : IAsyncDisposable
                 var responceText = responce.Message ?? "Ошибка";
 
                 sentMessage = await botClient.SendTextMessageAsync(
-                     chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                     responceText,
-                     replyMarkup: responce.InlineKeyboard,
-                     cancellationToken: cancellationToken);
+                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                    responceText,
+                    replyMarkup: responce.InlineKeyboard,
+                    cancellationToken: cancellationToken);
 
                 break;
             }
             case "/registrationcustomercompany":
             {
                 string responceText = "Регистрация компании.\n"
-                         + "Введите название компании:";
+                                      + "Введите название компании:";
 
                 var newContext = new MessageContext.TelegramBotMessageContext()
                 {
@@ -702,24 +815,24 @@ public partial class TelegramBot : IAsyncDisposable
                 }
 
                 sentMessage = await botClient.EditMessageTextAsync(
-                   chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                   messageId: message.MessageId,
-                   text: responceText,
-                   cancellationToken: cancellationToken);
+                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                    messageId: message.MessageId,
+                    text: responceText,
+                    cancellationToken: cancellationToken);
                 break;
             }
             case "/registrationparty":
             {
                 string responceText = "Регистрация события.\n"
-                       + "Введите данны:\n\n"
-                       + "*Дата проведения события (дд.мм.гггг)*"
-                       + "*Название события (дд.мм.гггг)*;\n"
-                       + "*Стоимость (число)*;\n"
-                       + "*Стоимость если есть репост (число)*;\n"
-                       + "*Стоимость в день события (число)*;\n"
-                       + "*Бесплатный вход не танцующим (да/нет)*\n\n"
-                       + "симовл *;* обязателен в конце каждого типа данных, кроме последней строки. Дату вводить в формате *дд.мм.гггг*\n"
-                       + "Пример:\n";
+                                      + "Введите данны:\n\n"
+                                      + "*Дата проведения события (дд.мм.гггг)*"
+                                      + "*Название события (дд.мм.гггг)*;\n"
+                                      + "*Стоимость (число)*;\n"
+                                      + "*Стоимость если есть репост (число)*;\n"
+                                      + "*Стоимость в день события (число)*;\n"
+                                      + "*Бесплатный вход не танцующим (да/нет)*\n\n"
+                                      + "симовл *;* обязателен в конце каждого типа данных, кроме последней строки. Дату вводить в формате *дд.мм.гггг*\n"
+                                      + "Пример:\n";
 
                 var newContext = new MessageContext.TelegramBotMessageContext()
                 {
@@ -739,21 +852,21 @@ public partial class TelegramBot : IAsyncDisposable
                 }
 
                 sentMessage = await botClient.SendTextMessageAsync(
-                   chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                   text: responceText.Replace("_", "\\_"),
-                   parseMode: ParseMode.Markdown,
-                   cancellationToken: cancellationToken);
+                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                    text: responceText.Replace("_", "\\_"),
+                    parseMode: ParseMode.Markdown,
+                    cancellationToken: cancellationToken);
 
                 sentMessage = await botClient.SendTextMessageAsync(
-                  chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                  text: "07.12.2023;\n"
-                       + "Примерное название вечеринки;\n"
-                       + "300;\n"
-                       + "200;\n"
-                       + "400;\n"
-                       + "да\n".Replace("_", "\\_"),
-                  parseMode: ParseMode.Markdown,
-                  cancellationToken: cancellationToken);
+                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                    text: "07.12.2023;\n"
+                          + "Примерное название вечеринки;\n"
+                          + "300;\n"
+                          + "200;\n"
+                          + "400;\n"
+                          + "да\n".Replace("_", "\\_"),
+                    parseMode: ParseMode.Markdown,
+                    cancellationToken: cancellationToken);
 
                 break;
             }
@@ -765,43 +878,44 @@ public partial class TelegramBot : IAsyncDisposable
             {
                 if (conxtexMessage != null)
                 {
-                    switch(conxtexMessage.State)
+                    switch (conxtexMessage.State)
                     {
-                        case TelegramUserState.WritedFIOandPhoneYourSelf or TelegramUserState.EditRegistrationFIOandPhone:
+                        case TelegramUserState.WritedFIOandPhoneYourSelf
+                            or TelegramUserState.EditRegistrationFIOandPhone:
                         {
                             //ФИО и номер телефона вписали, надо проверить и сохранить.
                             var messageFromUser = messageText.ToLower();
                             var FIOandPhone = messageFromUser.Split(' ');
-                            if(FIOandPhone.Length == 4)
+                            if (FIOandPhone.Length == 4)
                             {
-                               conxtexMessage.LastMessage = messageText;
-                               conxtexMessage.UserInfo = new MessageContext.UserInfo()
-                               {
-                                   FirstName = FIOandPhone[0],
-                                   SecondName = FIOandPhone[1],
-                                   MiddleName = FIOandPhone[2],
-                                   Phone = FIOandPhone[3],
-                               };
-                              
-                               //Если все правильно то сохранить или отредактировать данные ФИО в базу
-                               //Сначало смотрим присутствует ли это ФИО в базе
-                               var checkExistUserInfoCommand = new CheckExistUserCommand()
-                               {
-                                   FirstName = conxtexMessage.UserInfo.FirstName,
-                                   MiddleName = conxtexMessage.UserInfo.MiddleName,
-                                   LastName = conxtexMessage.UserInfo.SecondName,
-                               };
-                               var resultCheckExistUserCommand = await _mediator.Send(checkExistUserInfoCommand);
+                                conxtexMessage.LastMessage = messageText;
+                                conxtexMessage.UserInfo = new MessageContext.UserInfo()
+                                {
+                                    FirstName = FIOandPhone[0],
+                                    SecondName = FIOandPhone[1],
+                                    MiddleName = FIOandPhone[2],
+                                    Phone = FIOandPhone[3],
+                                };
 
-                               User? userInfo = null;
+                                //Если все правильно то сохранить или отредактировать данные ФИО в базу
+                                //Сначало смотрим присутствует ли это ФИО в базе
+                                var checkExistUserInfoCommand = new CheckExistUserCommand()
+                                {
+                                    FirstName = conxtexMessage.UserInfo.FirstName,
+                                    MiddleName = conxtexMessage.UserInfo.MiddleName,
+                                    LastName = conxtexMessage.UserInfo.SecondName,
+                                };
+                                var resultCheckExistUserCommand = await _mediator.Send(checkExistUserInfoCommand);
 
-                               if (resultCheckExistUserCommand.Success)
-                               {
+                                User? userInfo = null;
+
+                                if (resultCheckExistUserCommand.Success)
+                                {
                                     //Если данные уже присутствуют в базе то человек явно уже посещал какое-то мероприятие, но может другой компании.
                                     userInfo = resultCheckExistUserCommand.userInfo;
-                               }
-                               else
-                               {
+                                }
+                                else
+                                {
                                     var command = new UpdateUserCommand()
                                     {
                                         newUser = new User
@@ -814,72 +928,94 @@ public partial class TelegramBot : IAsyncDisposable
                                     };
 
                                     var saveUserInfo = await _mediator.Send(command);
-                                    if(saveUserInfo)
+                                    if (saveUserInfo)
                                     {
                                         userInfo = command.newUser;
                                     }
-                               }
+                                }
 
-                               //Нужно сохранить данные в таблицу RegistrationOnEvents, чтоб привязать пользователя которого регестриуют к событию
-                               var checkExistRegistrationOnEventsCommand = new CheckExistRegistrationOnEventsCommand()
-                               {
-                                   EventId = 1,
-                                   WhoRegistratedUserId = telegramUser.Id,
-                                   UserId = userInfo.Id,
-                                   StateRegistrationOnEvent = "WaitingManagerApprove"
-                               };
+                                //Нужно сохранить данные в таблицу RegistrationOnEvents, чтоб привязать пользователя которого регестриуют к событию
+                                var checkExistRegistrationOnEventsCommand = new CheckExistRegistrationOnEventsCommand()
+                                {
+                                    EventId = 1,
+                                    WhoRegistratedUserId = telegramUser.Id,
+                                    UserId = userInfo.Id,
+                                    StateRegistrationOnEvent = "WaitingManagerApprove"
+                                };
 
-                               //Сначало проверить существует ли он в базе 
-                               var checkRegistrationOnEvent = await _mediator.Send(checkExistRegistrationOnEventsCommand);
-                               if(checkRegistrationOnEvent.Success)
-                               {
-                                 //пользователь уже пытался зарегестрироваться
-                               }
-                               else
-                               {
-                                  // Регестрируем пользователя
-                                  var updateRegistrationOnEventsCommand = new UpdateRegistrationOnEventsCommand()
-                                  {
-                                      newRegistrationOnEvents = new XEventUser()
-                                      {
-                                          EventId = 1,
-                                          UserId = userInfo.Id,
-                                          WhoRegUserId = telegramUser.Id,
-                                      }
-                                  };
-                               }
+                                //Сначало проверить существует ли он в базе 
+                                var checkRegistrationOnEvent =
+                                    await _mediator.Send(checkExistRegistrationOnEventsCommand);
+                                if (checkRegistrationOnEvent.Success)
+                                {
+                                    //пользователь уже пытался зарегестрироваться
+                                }
+                                else
+                                {
+                                    // Регестрируем пользователя
+                                    var updateRegistrationOnEventsCommand = new UpdateRegistrationOnEventsCommand()
+                                    {
+                                        newRegistrationOnEvents = new XEventUser()
+                                        {
+                                            EventId = 1,
+                                            UserId = userInfo.Id,
+                                            WhoRegUserId = telegramUser.Id,
+                                        }
+                                    };
+                                }
 
-                               //
-                               inlineKeyboard = new(
-                                  new[] {
-                                      new[] { InlineKeyboardButton.WithCallbackData("Завершить регистрацию", Facade.KeyboardCommand.BreakRegistration.ToString()) },
-                                      new[] { InlineKeyboardButton.WithCallbackData("Редактировать",Facade.KeyboardCommand.EditRegistrationFIOandPhone.ToString()) },
-                                      new[] { InlineKeyboardButton.WithCallbackData("Верные", Facade.KeyboardCommand.ApproveRegistrationFIOandPhone.ToString()) }
-                                  }
-                               );
+                                //
+                                inlineKeyboard = new(
+                                    new[]
+                                    {
+                                        new[]
+                                        {
+                                            InlineKeyboardButton.WithCallbackData("Завершить регистрацию",
+                                                Facade.KeyboardCommand.BreakRegistration.ToString())
+                                        },
+                                        new[]
+                                        {
+                                            InlineKeyboardButton.WithCallbackData("Редактировать",
+                                                Facade.KeyboardCommand.EditRegistrationFIOandPhone.ToString())
+                                        },
+                                        new[]
+                                        {
+                                            InlineKeyboardButton.WithCallbackData("Верные",
+                                                Facade.KeyboardCommand.ApproveRegistrationFIOandPhone.ToString())
+                                        }
+                                    }
+                                );
 
-                               sentMessage = await botClient.SendTextMessageAsync(
-                                              chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                                              text: "Подтвердите корректность введенных данных:\n"+
-                                                    messageText,
-                                              replyMarkup: inlineKeyboard,
-                                              cancellationToken: cancellationToken);
-                              
+                                sentMessage = await botClient.SendTextMessageAsync(
+                                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                    text: "Подтвердите корректность введенных данных:\n" +
+                                          messageText,
+                                    replyMarkup: inlineKeyboard,
+                                    cancellationToken: cancellationToken);
                             }
                             else
                             {
-                                   inlineKeyboard = new(
-                                      new[] {
-                                          new[] { InlineKeyboardButton.WithCallbackData("Завершить регистрацию", Facade.KeyboardCommand.BreakRegistration.ToString()) },
-                                          new[] { InlineKeyboardButton.WithCallbackData("Редактировать",Facade.KeyboardCommand.EditRegistrationFIOandPhone.ToString()) },
-                                       }
-                                    );
+                                inlineKeyboard = new(
+                                    new[]
+                                    {
+                                        new[]
+                                        {
+                                            InlineKeyboardButton.WithCallbackData("Завершить регистрацию",
+                                                Facade.KeyboardCommand.BreakRegistration.ToString())
+                                        },
+                                        new[]
+                                        {
+                                            InlineKeyboardButton.WithCallbackData("Редактировать",
+                                                Facade.KeyboardCommand.EditRegistrationFIOandPhone.ToString())
+                                        },
+                                    }
+                                );
 
-                                    sentMessage = await botClient.SendTextMessageAsync(
-                                       chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                                       text: "Введены не верные данные.",
-                                       replyMarkup: inlineKeyboard,
-                                       cancellationToken: cancellationToken);
+                                sentMessage = await botClient.SendTextMessageAsync(
+                                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                    text: "Введены не верные данные.",
+                                    replyMarkup: inlineKeyboard,
+                                    cancellationToken: cancellationToken);
                             }
 
                             break;
@@ -891,7 +1027,8 @@ public partial class TelegramBot : IAsyncDisposable
 
                             // Сохранить фотку которую нам прислали:
                             // Получаем информацию о фото
-                            var photo = message.Photo[^1]; // берем последний элемент массива, который обычно является самым крупным размером
+                            var photo = message
+                                .Photo[^1]; // берем последний элемент массива, который обычно является самым крупным размером
                             var fileId = photo.FileId;
                             var dir = "downloaded_photos";
 
@@ -899,6 +1036,7 @@ public partial class TelegramBot : IAsyncDisposable
                             {
                                 Directory.CreateDirectory(dir);
                             }
+
                             // Путь, куда сохранить файл
                             var savePath = $"{dir}/{textToEncode}.jpg";
 
@@ -917,7 +1055,7 @@ public partial class TelegramBot : IAsyncDisposable
                                 Console.WriteLine($"Фотография сохранена: {savePath}");
                             }
 
-                            if(_chanelPostId is not null )
+                            if (_chanelPostId is not null)
                             {
                                 using (var imageStream = new FileStream(savePath, FileMode.Open))
                                 {
@@ -927,25 +1065,33 @@ public partial class TelegramBot : IAsyncDisposable
                                     var imageInput = new InputFileStream(stream, $"{textToEncode}.jpg");
 
                                     inlineKeyboard = new(
-                                      new[] {
-                                         new[] { InlineKeyboardButton.WithCallbackData("Фейк",Facade.KeyboardCommand.FaildCheckPictureFromMenager.ToString()) },
-                                         new[] { InlineKeyboardButton.WithCallbackData("Подтверить", Facade.KeyboardCommand.ApproveCheckPictureFromMenager.ToString()) }
-                                      }
+                                        new[]
+                                        {
+                                            new[]
+                                            {
+                                                InlineKeyboardButton.WithCallbackData("Фейк",
+                                                    Facade.KeyboardCommand.FaildCheckPictureFromMenager.ToString())
+                                            },
+                                            new[]
+                                            {
+                                                InlineKeyboardButton.WithCallbackData("Подтверить",
+                                                    Facade.KeyboardCommand.ApproveCheckPictureFromMenager.ToString())
+                                            }
+                                        }
                                     );
 
                                     sentMessage = await botClient.SendPhotoAsync(
                                         chatId: _chanelPostId,
                                         photo: imageInput,
                                         replyMarkup: inlineKeyboard,
-                                        caption: $"Дата: {DateTime.Now.ToString("dd:MM:yyyy HH:mm:ss")}\n"+
-                                                 $"Телеграм пользователь: {telegramUser.TelegramChatId} {telegramUser.UserName.Replace("_","\\_")}\n"+
-                                                 $"Чек на регистрацию: {conxtexMessage.UserInfo.FIO}\n"+
+                                        caption: $"Дата: {DateTime.Now.ToString("dd:MM:yyyy HH:mm:ss")}\n" +
+                                                 $"Телеграм пользователь: {telegramUser.TelegramChatId} {telegramUser.UserName.Replace("_", "\\_")}\n" +
+                                                 $"Чек на регистрацию: {conxtexMessage.UserInfo.FIO}\n" +
                                                  $"Телефон: {conxtexMessage.UserInfo.Phone}",
                                         parseMode: ParseMode.Markdown
                                     );
                                 }
                             }
-                            
 
 
                             // Создание QR-кода
@@ -967,7 +1113,9 @@ public partial class TelegramBot : IAsyncDisposable
                                 );
                             }
 
-                            _messageContexts.TryRemove(new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, conxtexMessage));
+                            _messageContexts.TryRemove(
+                                new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId,
+                                    conxtexMessage));
                             break;
                         }
                         case TelegramUserState.RegistrationCustomerCompany:
@@ -976,46 +1124,55 @@ public partial class TelegramBot : IAsyncDisposable
                             if (string.IsNullOrEmpty(nameCustomerCompany))
                             {
                                 sentMessage = await botClient.SendTextMessageAsync(
-                                  chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                                  text: "Введены не верные данные.",
-                                  replyMarkup: inlineKeyboard,
-                                  cancellationToken: cancellationToken);
+                                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                    text: "Введены не верные данные.",
+                                    replyMarkup: inlineKeyboard,
+                                    cancellationToken: cancellationToken);
                             }
                             else
                             {
-                                var response = await _telegramBotFacade.RegistrationCustomerCompany(telegramUser, nameCustomerCompany);
+                                var response =
+                                    await _telegramBotFacade.RegistrationCustomerCompany(telegramUser,
+                                        nameCustomerCompany);
 
                                 if (response.Success)
                                 {
                                     sentMessage = await botClient.SendTextMessageAsync(
-                                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                        chatId: telegramUser.TelegramChatId <= 0
+                                            ? chatId
+                                            : telegramUser!.TelegramChatId,
                                         text: response.Message,
                                         cancellationToken: cancellationToken);
-                                    
+
                                     //TODO:CanselOperation
-                                    _messageContexts.TryRemove(new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, null));
-                    
+                                    _messageContexts.TryRemove(
+                                        new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId,
+                                            null));
+
                                     //Определить пользователь пришел первый раз или уже существует в системе ?
                                     var responce = await Start(telegramUser);
 
                                     var responceText = responce.Message ?? "Ошибка";
-                    
+
                                     await botClient.SendTextMessageAsync(
-                                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                        chatId: telegramUser.TelegramChatId <= 0
+                                            ? chatId
+                                            : telegramUser!.TelegramChatId,
                                         text: responceText,
                                         cancellationToken: cancellationToken,
                                         replyMarkup: responce.InlineKeyboard);
-
                                 }
                                 else
                                 {
                                     sentMessage = await botClient.SendTextMessageAsync(
-                                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                        chatId: telegramUser.TelegramChatId <= 0
+                                            ? chatId
+                                            : telegramUser!.TelegramChatId,
                                         text: $"Ошибка регистрации компании",
                                         cancellationToken: cancellationToken);
                                 }
-
                             }
+
                             break;
                         }
                         case TelegramUserState.RegistrationTelegramBot:
@@ -1032,47 +1189,56 @@ public partial class TelegramBot : IAsyncDisposable
                                 // Извлекаем токен
                                 string token = parts[1].Trim();
 
-                                var cehck = await _mediator.Send(new CheckExistTelegramBotByTokenQuery { TelegramBotToken = token });
-                                
-                                if(cehck is not null)
+                                var cehck = await _mediator.Send(new CheckExistTelegramBotByTokenQuery
+                                    { TelegramBotToken = token });
+
+                                if (cehck is not null)
                                 {
                                     sentMessage = await botClient.SendTextMessageAsync(
-                                                  chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                                                  text: $"Бот {botName} с таким токеном уже был зарегистрирован.",
-                                                  cancellationToken: cancellationToken);
+                                        chatId: telegramUser.TelegramChatId <= 0
+                                            ? chatId
+                                            : telegramUser!.TelegramChatId,
+                                        text: $"Бот {botName} с таким токеном уже был зарегистрирован.",
+                                        cancellationToken: cancellationToken);
                                     break;
                                 }
 
                                 //Регистрация бота
-                                var registrationBotCommand = new UpdateTelegramBotCommand { 
+                                var registrationBotCommand = new UpdateTelegramBotCommand
+                                {
                                     newBot = new DataBase.Entities.Entities_DBContext.TelegramBots
-                                    { 
+                                    {
                                         OrgId = conxtexMessage.Org.Id,
                                         TelegramBotName = botName.Replace("@", string.Empty),
                                         TelegramBotToken = token,
                                         TelegramBotTypeId = conxtexMessage.TelegramBotTypeId
-                                    } 
+                                    }
                                 };
 
                                 var registretionBot = await _mediator.Send(registrationBotCommand);
 
-                                if(registretionBot.Success)
+                                if (registretionBot.Success)
                                 {
-                                    _telegramBotWorkerManager.Start(registretionBot.TelegramBot.TelegramBotType.TelegramBotTypeName, registretionBot.TelegramBot);
+                                    _telegramBotWorkerManager.Start(
+                                        registretionBot.TelegramBot.TelegramBotType.TelegramBotTypeName,
+                                        registretionBot.TelegramBot);
                                     sentMessage = await botClient.SendTextMessageAsync(
-                                                  chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                                                  text: $"Бот {botName} успешно зарегистрирован",
-                                                  cancellationToken: cancellationToken);
+                                        chatId: telegramUser.TelegramChatId <= 0
+                                            ? chatId
+                                            : telegramUser!.TelegramChatId,
+                                        text: $"Бот {botName} успешно зарегистрирован",
+                                        cancellationToken: cancellationToken);
                                 }
                                 else
                                 {
                                     sentMessage = await botClient.SendTextMessageAsync(
-                                                      chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                                                      text: $"Бот {botName} не зарегистрирован.",
-                                                      cancellationToken: cancellationToken);;
+                                        chatId: telegramUser.TelegramChatId <= 0
+                                            ? chatId
+                                            : telegramUser!.TelegramChatId,
+                                        text: $"Бот {botName} не зарегистрирован.",
+                                        cancellationToken: cancellationToken);
+                                    ;
                                 }
-
-
                             }
                             else
                             {
@@ -1083,36 +1249,127 @@ public partial class TelegramBot : IAsyncDisposable
                         }
                         case TelegramUserState.RegistrationParty:
                         {
+                            break;
+                        }
+                        case TelegramUserState.WriteAdministratorNikNameForAddInOrg:
+                        {
+                            inlineKeyboard = new(
+                                new[] {
+                                    new[] { InlineKeyboardButton.WithCallbackData("Завершить", Facade.KeyboardCommand.CanselOperation.ToString()) },
+                                }
+                            );
+                            
+                            var messageFromUser = messageText;
+                            if (messageFromUser.StartsWith("@"))
+                            {
+                                messageFromUser = messageFromUser.Substring(1);
+                            }
+                            
+                            //Сделать поиск пользователя в базе.
+                            var command = new GetUserByEmailORLoginQuery()
+                            {
+                                WithoutPassword = true,
+                                Email = messageFromUser
+                            };
+                            var userAdministrator = await _mediator.Send(command);
+                            if (userAdministrator is null)
+                            {
+                                sentMessage = await botClient.SendTextMessageAsync(
+                                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                    text: "Введены не верные данные.",
+                                    replyMarkup: inlineKeyboard,
+                                    cancellationToken: cancellationToken);
+                            }
+                            else
+                            {
+                                //Если пользователь которого хотят добавить присутсвует, то
+                                //Проверяем может он уже добавлен в таблицу Администраторов
+                                var checkUserAdministratorCommand = new CheckExistXOrgUserCommand
+                                {
+                                    telegramUser = userAdministrator
+                                };
+                                
+                                var checkUserAdministrator = await _mediator.Send(checkUserAdministratorCommand);
 
+                                if (checkUserAdministrator.Success)
+                                {
+                                    sentMessage = await botClient.SendTextMessageAsync(
+                                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                        text: "Данный пользователь уже был добавлен.",
+                                        replyMarkup: inlineKeyboard,
+                                        cancellationToken: cancellationToken);
+                                }
+                                else
+                                {
+                                    sentMessage = await botClient.SendTextMessageAsync(
+                                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                        text: "Сделать чтоб пользователь был успешно добавлен.",
+                                        replyMarkup: inlineKeyboard,
+                                        cancellationToken: cancellationToken);
+
+                                    var newXUser = new UpdateXOrgUserCommand
+                                    {
+                                        newOrgUser = new XOrgUser()
+                                        {
+                                            UserId = userAdministrator.Id,
+                                            OrgId = conxtexMessage.Org.Id,
+                                            RoleId = 3
+                                        }
+                                    };
+                                    
+                                    var saveUserAdministrator = await _mediator.Send(newXUser);
+
+                                    if (!saveUserAdministrator)
+                                    {
+                                        sentMessage = await botClient.SendTextMessageAsync(
+                                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                            text: "Ошбика при сохранении администратора",
+                                            replyMarkup: inlineKeyboard,
+                                            cancellationToken: cancellationToken);
+                                    }
+                                    else
+                                    {
+                                        sentMessage = await botClient.SendTextMessageAsync(
+                                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                            text: "Администратор добавлен.",
+                                            replyMarkup: inlineKeyboard,
+                                            cancellationToken: cancellationToken);
+                                    }
+
+                                }
+                            }
+                            
                             break;
                         }
                     }
                 }
+
                 break;
             }
         }
 
-        if(sentMessage is null)
+        if (sentMessage is null)
         {
             await botClient.SendTextMessageAsync(
-                  chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                  text: "Вы отправили: " + messageText,
-                  replyMarkup: replyKeyboardRemove,
-                  cancellationToken: cancellationToken);
+                chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                text: "Вы отправили: " + messageText,
+                replyMarkup: replyKeyboardRemove,
+                cancellationToken: cancellationToken);
         }
-       
+
         return;
     }
 
     public async Task<User?> FindUser(User requestTelegramUser, bool isDeleted = false)
     {
         //Ищем пользователя.
-        var cqrsUser = new GetUserByChatIdQuery { TelegramChatId = requestTelegramUser.TelegramChatId, IsDeleted = isDeleted };
+        var cqrsUser = new GetUserByChatIdQuery
+            { TelegramChatId = requestTelegramUser.TelegramChatId, IsDeleted = isDeleted };
         var responceUser = await _mediator.Send(cqrsUser);
 
         return responceUser;
     }
-    
+
     public async Task<WeatherCity?> FindWeatherCity(string city)
     {
         try
@@ -1127,6 +1384,7 @@ public partial class TelegramBot : IAsyncDisposable
             throw;
         }
     }
+
     public async Task<User?> CreateUser(User? requestTelegramUser)
     {
         var responseUser = await FindUser(requestTelegramUser);
@@ -1147,9 +1405,21 @@ public partial class TelegramBot : IAsyncDisposable
     {
         throw new NotImplementedException();
     }
-    
+
     public virtual async Task<ResponceTelegramFacade> SelectTypeBot(User user, int orgId)
     {
         throw new NotImplementedException();
+    }
+
+    public void AddButtonCansel(List<List<InlineKeyboardButton>> buttons)
+    {
+        if (buttons is null)
+        {
+            buttons = new List<List<InlineKeyboardButton>>();
+        }
+
+        buttons.Add(new List<InlineKeyboardButton>());
+        buttons.FirstOrDefault()
+            ?.Add(InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}"));
     }
 }

@@ -34,22 +34,25 @@ namespace DataBase.Contexts.DBContext
         public DBContext(DbContextOptions<DBContext> options) : base(options)
         {
             //Database.Migrate();
+            
+            // Включаем ленивую загрузку
+            ChangeTracker.LazyLoadingEnabled = true;
         }
 
-        public virtual DbSet<User> User { get; set; }
-        public virtual DbSet<Role> Role { get; set; }
-        public virtual DbSet<XEventUser> XEventUser { get; set; }
-        public virtual DbSet<Event> Event { get; set; }
-        public virtual DbSet<TelegramBotMessage> TelegramBotMessage { get; set; }
-        public virtual DbSet<Org> Org { get; set; }
-        public virtual DbSet<TelegramBots> TelegramBots { get; set; }
-        public virtual DbSet<XOrgUser> XOrgUser { get; set; }
-        public virtual DbSet<TelegramBotInChats> TelegramBotInChats { get; set; }
-        public virtual DbSet<OpenWeatherMap> OpenWeatherMap { get; set; }
-        public virtual DbSet<WeatherSubscribers> WeatherSubscribers { get; set; }
-        public virtual DbSet<WeatherCity> WeatherCity { get; set; }
+        public DbSet<User> User { get; set; }
+        public DbSet<Role> Role { get; set; }
+        public DbSet<XEventUser> XEventUser { get; set; }
+        public DbSet<Event> Event { get; set; }
+        public DbSet<TelegramBotMessage> TelegramBotMessage { get; set; }
+        public DbSet<Org> Org { get; set; }
+        public DbSet<TelegramBots> TelegramBots { get; set; }
+        public DbSet<XOrgUser> XOrgUser { get; set; }
+        public DbSet<TelegramBotInChats> TelegramBotInChats { get; set; }
+        public DbSet<OpenWeatherMap> OpenWeatherMap { get; set; }
+        public DbSet<WeatherSubscribers> WeatherSubscribers { get; set; }
+        public DbSet<WeatherCity> WeatherCity { get; set; }
         
-        public virtual DbSet<TelegramBotTypes> TelegramBotTypes { get; set; }
+        public DbSet<TelegramBotTypes> TelegramBotTypes { get; set; }
 
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {

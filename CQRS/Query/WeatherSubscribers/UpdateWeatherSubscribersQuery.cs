@@ -4,7 +4,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query;
 
-public struct UpdateWeatherSubscribersQuery : IRequest<(bool Success, WeatherSubscribers? WeatherSubscribers)>
+public record UpdateWeatherSubscribersQuery : IRequest<(bool Success, WeatherSubscribers? WeatherSubscribers)>
 {
     public WeatherSubscribers WeatherSubscribers { get; set; }
 }

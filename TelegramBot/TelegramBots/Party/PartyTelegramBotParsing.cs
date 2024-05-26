@@ -670,13 +670,15 @@ public partial class PartyTelegramBot : TelegramBot
                             case Facade.TelegramUserState.SendedCheckPicture:
                                 {
                                     // Текст, который вы хотите закодировать в QR-код
-                                    string textToEncode = conxtexMessage.LastMessage;
+                                    string textToEncode = string.IsNullOrEmpty(conxtexMessage.LastMessage) ? "Test" : conxtexMessage.LastMessage;
 
                                     // Сохранить фотку которую нам прислали:
                                     // Получаем информацию о фото
                                     var photo = message.Photo[^1]; // берем последний элемент массива, который обычно является самым крупным размером
                                     var fileId = photo.FileId;
-                                    var dir = "downloaded_photos";
+
+                                    var baseDirectory = AppDomain.CurrentDomain.BaseDirectory; // или Directory.GetCurrentDirectory()
+                                    var dir = Path.Combine(baseDirectory, "downloaded_photos");
 
                                     if (!Directory.Exists(dir))
                                     {
@@ -728,26 +730,32 @@ public partial class PartyTelegramBot : TelegramBot
                                             );
                                         }
                                     }
-
-
-
+                                    
                                     // Создание QR-кода
                                     var barcode = BarcodeWriter.CreateBarcode(textToEncode, BarcodeEncoding.QRCode);
-                                    var qrCodePath = $"downloaded_photos/{textToEncode}_QrCode.jpg";
+                                    baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                                    var qrCodePath = Path.Combine(baseDirectory, "downloaded_photos", $"{textToEncode}_QrCode.jpg");
                                     barcode.Image.SaveAs(qrCodePath);
 
-                                    using (var imageStream = new FileStream(qrCodePath, FileMode.Open))
+                                    try
                                     {
-                                        MemoryStream stream = new();
-                                        imageStream.CopyTo(stream);
-                                        stream.Position = 0;
-                                        var imageInput = new InputFileStream(stream, "QRCode");
+                                        using (var imageStream = new FileStream(qrCodePath, FileMode.Open))
+                                        {
+                                            MemoryStream stream = new();
+                                            imageStream.CopyTo(stream);
+                                            stream.Position = 0;
+                                            var imageInput = new InputFileStream(stream, "QRCode");
 
-                                        sentMessage = await botClient.SendPhotoAsync(
-                                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                                            photo: imageInput,
-                                            caption: "Ваш QR код для входа:"
-                                        );
+                                            sentMessage = await botClient.SendPhotoAsync(
+                                                chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                                photo: imageInput,
+                                                caption: "Ваш QR код для входа:"
+                                            );
+                                        }
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Console.WriteLine(e);
                                     }
 
                                     _messageContexts.TryRemove(new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, conxtexMessage));

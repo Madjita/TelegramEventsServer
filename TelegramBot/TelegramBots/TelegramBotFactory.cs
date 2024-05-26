@@ -20,8 +20,8 @@ public class TelegramBotFactory
     {
         return bot.TelegramBotType.TelegramBotTypeName switch
         {
-            "MainManagerTelgramBot" => new MainManagerTelgramBot(bot.OrgId, bot.TelegramBotName, bot.TelegramBotToken, logger, mediator, scopeFactory),
-            "PartyTelegramBot" => new PartyTelegramBot(bot.OrgId, bot.TelegramBotName, bot.TelegramBotToken, logger, mediator, scopeFactory),
+            "MainManagerTelgramBot" => new MainManagerTelgramBot(0, bot.TelegramBotName, bot.TelegramBotToken, logger, mediator, scopeFactory),
+            "PartyTelegramBot" => new PartyTelegramBot(bot.Id, bot.TelegramBotName, bot.TelegramBotToken, logger, mediator, scopeFactory),
             _ => null
         };
     }

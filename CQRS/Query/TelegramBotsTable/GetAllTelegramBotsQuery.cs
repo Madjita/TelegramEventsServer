@@ -6,7 +6,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS;
 
-public struct GetAllTelegramBotsQuery : IRequest<IEnumerable<TelegramBots>>
+public record GetAllTelegramBotsQuery : IRequest<IEnumerable<TelegramBots>>
 {
     public GetAllTelegramBotsQuery()
     {

@@ -4,7 +4,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query;
 
-public struct UpdateEventsCommand : IRequest<(bool Success, Event? events)>
+public record UpdateEventsCommand : IRequest<(bool Success, Event? events)>
 {
     public Event newEvent { get; set; }
 }

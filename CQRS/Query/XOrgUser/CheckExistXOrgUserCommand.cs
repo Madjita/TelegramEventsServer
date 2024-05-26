@@ -5,7 +5,7 @@ using DataBase.Entities.Entities_DBContext;
 
 namespace CQRS.Query;
 
-public struct CheckExistXOrgUserCommand : IRequest<(bool Success, XOrgUser? xOrgUser)>
+public record CheckExistXOrgUserCommand : IRequest<(bool Success, XOrgUser? xOrgUser)>
 {
     public User? telegramUser { get; set; }
     public int BotId { get; set; }
@@ -19,7 +19,29 @@ public class CheckExistXOrgUserCommandHandler : DbContextInjection, IRequestHand
     {
         try
         {
-            var query = from employee in db.XOrgUser
+            IQueryable<XOrgUser> query;
+            XOrgUser? result;
+            
+            if (request.BotId == 0)
+            {
+                query = from employee in db.XOrgUser
+                    join company in db.Org on employee.OrgId equals company.Id
+                    join user in db.User on employee.UserId equals user.Id
+                    where user.TelegramChatId == request.telegramUser!.TelegramChatId
+                    select new XOrgUser
+                    {
+                        Id = employee.Id,
+                        OrgId = company.Id,
+                        UserId = user.Id,
+                        RoleId = employee.RoleId,
+                    };
+
+                result = await query.FirstOrDefaultAsync();
+
+                return (result is not null, result);
+            }
+            
+            query = from employee in db.XOrgUser
                         join bot in db.TelegramBots on request.BotId equals bot.Id
                         join company in db.Org on employee.OrgId equals company.Id
                         join user in db.User on employee.UserId equals user.Id
@@ -32,7 +54,7 @@ public class CheckExistXOrgUserCommandHandler : DbContextInjection, IRequestHand
                             RoleId = employee.RoleId,
                         };
 
-            var result = await query.FirstOrDefaultAsync();
+            result = await query.FirstOrDefaultAsync();
 
             return (result is not null, result);
         }

@@ -4,7 +4,7 @@ using DataBase.Entities.Entities_DBContext;
 
 namespace CQRS.Query;
 
-public struct UpdateUserCommand : IRequest<bool>
+public record UpdateUserCommand : IRequest<bool>
 {
     public User newUser { get; set; }
 }

@@ -21,5 +21,11 @@ namespace DataBase.Entities.Entities_DBContext
 
         [Column("is_deleted")]
         public bool IsDeleted { get; set; }
+        
+        [Column("user_id")]
+        public User? User { get; set; }
+        
+        [Column("org_id")]
+        public Org? Organization { get; set; }
     }
 }

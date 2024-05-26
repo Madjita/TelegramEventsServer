@@ -5,7 +5,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS;
 
-public struct GetAllTelegramBotTypeByIsSystemQuery : IRequest<IEnumerable<TelegramBotTypes>>
+public record GetAllTelegramBotTypeByIsSystemQuery : IRequest<IEnumerable<TelegramBotTypes>>
 {
     public bool IsSystem { get; set; }
 }

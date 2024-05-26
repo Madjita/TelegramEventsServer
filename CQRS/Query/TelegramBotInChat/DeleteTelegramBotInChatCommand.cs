@@ -3,7 +3,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query.TelegramBotInChat;
 
-public struct DeleteTelegramBotInChatCommand : IRequest<bool>
+public record DeleteTelegramBotInChatCommand : IRequest<bool>
 {
     public long TelegramChatId { get; set; }
     public long TelegramBotId { get; set; }

@@ -4,7 +4,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query;
 
-public struct UpdateOrgCommand : IRequest<(bool Success, Org? customerCompany)>
+public record UpdateOrgCommand : IRequest<(bool Success, Org? customerCompany)>
 {
     public Org newCustomerCompany { get; set; }
 }

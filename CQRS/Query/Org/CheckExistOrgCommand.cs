@@ -5,7 +5,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query.CustomerCompany
 {
-    public struct CheckExistOrgCommand : IRequest<(bool Success, Org? customerCompany)>
+    public record CheckExistOrgCommand : IRequest<(bool Success, Org? customerCompany)>
     {
         public string Name { get; set; }
     }

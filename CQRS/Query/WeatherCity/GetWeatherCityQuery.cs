@@ -5,12 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CQRS.Query;
 
-public struct GetWeatherCityQuery : IRequest<WeatherCity?>
+public record GetWeatherCityQuery : IRequest<WeatherCity?>
 {
     public string City { get; set; }
 }
 
-public struct GetByIdWeatherCityQuery : IRequest<WeatherCity?>
+public record GetByIdWeatherCityQuery : IRequest<WeatherCity?>
 {
     public int Id { get; set; }
 }

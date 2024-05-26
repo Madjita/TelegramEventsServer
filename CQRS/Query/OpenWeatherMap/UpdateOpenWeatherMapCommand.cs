@@ -4,7 +4,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query;
 
-public struct UpdateOpenWeatherMapCommand : IRequest<(bool Success, OpenWeatherMap? OpenWeatherMapDB)>
+public record UpdateOpenWeatherMapCommand : IRequest<(bool Success, OpenWeatherMap? OpenWeatherMapDB)>
 {
     public OpenWeatherMap OpenWeatherMapDB { get; set; }
 }

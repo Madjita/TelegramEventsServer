@@ -4,10 +4,12 @@ using DataBase.Contexts.DBContext;
 using User = DataBase.Entities.Entities_DBContext.User;
 
 namespace CQRS.Query;
-public struct GetUserByEmailORLoginQuery : IRequest<User?>
+public record GetUserByEmailORLoginQuery : IRequest<User?>
 {
     public string Email { get; set; }
     public string HPassword { get; set; }
+    
+    public bool WithoutPassword { get; set; }
 }
 
 public class GetUserByEmailORLoginQueryHandler : DbContextInjection, IRequestHandler<GetUserByEmailORLoginQuery, User?>
@@ -19,6 +21,11 @@ public class GetUserByEmailORLoginQueryHandler : DbContextInjection, IRequestHan
         if (string.IsNullOrEmpty(request.HPassword))
         {
             return await db.User.FirstOrDefaultAsync(_ => _.Email == request.Email || _.UserName == request.Email && _.IsDeleted == false);
+        }
+        else if (request.WithoutPassword)
+        {
+            return await db.User.FirstOrDefaultAsync(_ => (_.Email == request.Email || _.UserName == request.Email)
+                                                          && _.IsDeleted == false);
         }
         else
         {

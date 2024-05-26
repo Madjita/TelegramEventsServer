@@ -5,7 +5,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query;
 
-public struct GetUserByIdQuery : IRequest<User?>
+public record GetUserByIdQuery : IRequest<User?>
 {
     public long Id
     {

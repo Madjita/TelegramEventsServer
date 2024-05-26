@@ -5,7 +5,7 @@ using DataBase.Entities.Entities_DBContext;
 
 namespace CQRS.Query;
 
-public struct CheckExistUserCommand : IRequest<(bool Success, User? userInfo)>
+public record CheckExistUserCommand : IRequest<(bool Success, User? userInfo)>
 {
     public string FirstName { get; set; }
     public string LastName { get; set; }

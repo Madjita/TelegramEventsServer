@@ -6,7 +6,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS;
 
-public struct GetSliceTelegramBotByOrgIdQuery : IRequest<(bool Success, List<TelegramBots> TelegramBots, int TotalRecords)>
+public record GetSliceTelegramBotByOrgIdQuery : IRequest<(bool Success, List<TelegramBots> TelegramBots, int TotalRecords)>
 {
     public int OrgId { get; set; }
     public int Skip { get; set; }
@@ -19,26 +19,26 @@ public class GetSliceTelegramBotByOrgIdQueryHandler : DbContextInjection, IReque
 
     public async Task<(bool Success, List<TelegramBots> TelegramBots, int TotalRecords)> Handle(GetSliceTelegramBotByOrgIdQuery request, CancellationToken cancellationToken)
     {
-        int totalRecords = db.TelegramBots.Count(_ => _.OrgId == request.OrgId);
-
-        List<TelegramBots> telegramBots = new();
-        if(request.Take >= totalRecords)
+        try
         {
-            telegramBots = await db.TelegramBots.OrderBy(_ => _.Id).Where(_ => _.OrgId == request.OrgId).ToListAsync(cancellationToken);
+            var query = db.TelegramBots.Where(_ => _.OrgId == request.OrgId);
+            var totalRecords = await query.CountAsync(cancellationToken);
+            query = query.OrderBy(_ => _.Id);
+            if (request.Skip > 0) 
+            {
+                query = query.Skip(request.Skip); 
+            } 
+            if (request.Take > 0 && request.Take < totalRecords) 
+            {
+                query = query.Take(request.Take); 
+            } 
+            var telegramBots = await query.ToListAsync(cancellationToken); 
+            return (telegramBots.Any(), telegramBots, totalRecords); 
         }
-        else if (request.Skip > 0)
+        catch (Exception ex)
         {
-            telegramBots = await db.TelegramBots.OrderBy(_ => _.Id).Where(_ => _.OrgId == request.OrgId).Skip(request.Skip).Take(request.Take).ToListAsync(cancellationToken);
+            Console.WriteLine(ex.ToString());
         }
-        else if(request.Take > 0)
-        {
-            telegramBots = await db.TelegramBots.OrderBy(_ => _.Id).Where(_ => _.OrgId == request.OrgId).Take(request.Take).ToListAsync(cancellationToken);
-        }
-        else
-        {
-            telegramBots = await db.TelegramBots.OrderBy(_ => _.Id).Where(_ => _.OrgId == request.OrgId).ToListAsync(cancellationToken);
-        }
-                
-        return (telegramBots.Any(), telegramBots, totalRecords);
+        return (false, new List<TelegramBots>(), 0);
     }
 }

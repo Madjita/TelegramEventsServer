@@ -5,7 +5,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS
 {
-    public struct GetUserByUserNameQuery : IRequest<User?>
+    public record GetUserByUserNameQuery : IRequest<User?>
     {
         public string UserName
         {

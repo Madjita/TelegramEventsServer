@@ -4,7 +4,7 @@ using DataBase.Contexts.DBContext;
 
 namespace CQRS.Query;
 
-public struct UpdateTelegramBotInChatCommand : IRequest<(bool Success, TelegramBotInChats? newTelegramBotInChat)>
+public record UpdateTelegramBotInChatCommand : IRequest<(bool Success, TelegramBotInChats? newTelegramBotInChat)>
 {
     public TelegramBotInChats newTelegramBotInChat { get; set; }
 }

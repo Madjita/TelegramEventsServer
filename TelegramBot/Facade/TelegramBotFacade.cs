@@ -37,6 +37,8 @@ namespace TelegramBot.Facade
         RegistrationTelegramBot,
         
         SelectCompany,
+        
+        WriteAdministratorNikNameForAddInOrg, // ждем когда пользователь впишет ник нейм администратора
 
 
         //weatherTelegramBot
@@ -55,6 +57,10 @@ namespace TelegramBot.Facade
         SelectTelegramBot,
         PageTelegramBotInOrgPrevPage,
         PageTelegramBotInOrgNextPage,
+        
+        SelectAdministratorInOrg,
+        PageAdministratorInOrgPrevPage,
+        PageAdministratorInOrgNextPage,
         
         CanselOperation,
         ExitFromBot,
@@ -80,6 +86,8 @@ namespace TelegramBot.Facade
         StartRegistrationBot,
         StartCreationBot,
         EndRegistrationBot,
+        AddAdministratorInOrg, // Добавить администратора на конкретную организацию.
+        SettingsAdministratorsInOrg, // Кнопка настроек администраторов в организации
 
 
         //
@@ -134,6 +142,17 @@ namespace TelegramBot.Facade
         Task<List<List<InlineKeyboardButton>>> PageBotTypeButtons(IMediator mediator, User? responceUser,int orgId, int currentPage = 0, int companiesPerPage = 4);
         Task<List<List<InlineKeyboardButton>>> PageTelegramBotInOrgButtons(IMediator mediator, User? responceUser, int orgId, int currentPage = 0, int companiesPerPage = 4);
         
+        /// <summary>
+        /// Получить список кнопок Администраторов в текущей организации
+        /// </summary>
+        /// <param name="mediator"></param>
+        /// <param name="responceUser"></param>
+        /// <param name="orgId"></param>
+        /// <param name="currentPage"></param>
+        /// <param name="companiesPerPage"></param>
+        /// <returns></returns>
+        Task<List<List<InlineKeyboardButton>>> PageAdminUsersInOrgButtons(IMediator mediator, User? responceUser, int orgId, int currentPage = 0, int companiesPerPage = 4);
+
         //Start buttons
         InlineKeyboardMarkup StartManagerButtons(IMediator mediator, User responceUser, int currentPage = 0, int companiesPerPage = 4);
         Task<User?> FindUser(IMediator mediator, User requestTelegramUser, bool isDeleted = false);
@@ -440,7 +459,6 @@ namespace TelegramBot.Facade
             // Заполняем кнопки для выбора ботов на текущей странице
             void FillButtonsForPage(int page)
             {
-
                 for (int i = 0; i < responseCommand.TelegramBots.Count; i++)
                 {
                     buttons.Add(new List<InlineKeyboardButton>());
@@ -470,6 +488,7 @@ namespace TelegramBot.Facade
             buttons.Add(new List<InlineKeyboardButton>()
             {
                 InlineKeyboardButton.WithCallbackData("Создать телеграм бота", $"{KeyboardCommand.StartRegistrationBot} {orgId}"),
+                InlineKeyboardButton.WithCallbackData("Настроить администраторов", $"{KeyboardCommand.SettingsAdministratorsInOrg} {orgId}"),
             });
             
             buttons.Add(new List<InlineKeyboardButton>()
@@ -479,5 +498,65 @@ namespace TelegramBot.Facade
 
             return buttons;
         }
+        
+        public async Task<List<List<InlineKeyboardButton>>> PageAdminUsersInOrgButtons(IMediator mediator, User? responceUser, int orgId, int currentPage = 0,
+            int companiesPerPage = 4)
+        {
+            var command = new GetSliceUsersInOrganizationByOrganizationIdWithRoleIdQuery()
+            {
+                OrganizationId = orgId,
+                RoleId = 3, // Должен быть id роли администратора
+                Skip = currentPage * companiesPerPage,
+                Take = companiesPerPage
+            };
+
+            var responseCommand = await mediator.Send(command);
+
+            List<List<InlineKeyboardButton>> buttons = new();
+            buttons.Add(new List<InlineKeyboardButton>());
+            buttons.Add(new List<InlineKeyboardButton>());
+            
+            // Заполняем кнопки для выбора администратора на текущей странице
+            void FillButtonsForPage(int page)
+            {
+                for (int i = 0; i < responseCommand.UsersInOrganization.Count; i++)
+                {
+                    buttons.Add(new List<InlineKeyboardButton>());
+                    var item = responseCommand.UsersInOrganization[i];
+                    var button = InlineKeyboardButton.WithCallbackData(item.User?.UserName, $"{Facade.KeyboardCommand.SelectAdministratorInOrg} {item.Id}");
+                    buttons.LastOrDefault().Add(button);
+                }
+            }
+
+            FillButtonsForPage(currentPage);
+
+            // Добавляем кнопки "назад" и "вперед", если необходимо
+            if (responseCommand.TotalRecords > companiesPerPage)
+            {
+                if (currentPage > 0)
+                {
+                    buttons[1].Insert(0, InlineKeyboardButton.WithCallbackData("⬅️", $"{Facade.KeyboardCommand.PageAdministratorInOrgPrevPage} {orgId} {currentPage - 1}"));
+                }
+
+                if (currentPage <= (responseCommand.TotalRecords / companiesPerPage)-1)
+                {
+                    buttons.Add(new List<InlineKeyboardButton>());
+                    buttons.LastOrDefault().Add(InlineKeyboardButton.WithCallbackData("➡️", $"{Facade.KeyboardCommand.PageAdministratorInOrgNextPage} {orgId} {currentPage + 1}"));
+                }
+            }
+            
+            buttons.Add(new List<InlineKeyboardButton>()
+            {
+                InlineKeyboardButton.WithCallbackData("Добавить администратора", $"{KeyboardCommand.AddAdministratorInOrg} {orgId}"),
+            });
+            
+            buttons.Add(new List<InlineKeyboardButton>()
+            {
+                InlineKeyboardButton.WithCallbackData("Завершить", KeyboardCommand.CanselOperation.ToString())
+            });
+
+            return buttons;
+        }
+
     }
 }
