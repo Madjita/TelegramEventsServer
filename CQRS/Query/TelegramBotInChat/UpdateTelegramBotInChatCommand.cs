@@ -17,6 +17,12 @@ public class UpdateTelegramBotInChatCommandHandler : DbContextInjection, IReques
     {
         try
         {
+            var findItem = db.TelegramBotInChats.FirstOrDefault(_ => _.TelegramChatId == request.newTelegramBotInChat.TelegramChatId && _.TelegramBotId == request.newTelegramBotInChat.TelegramBotId);
+            if (findItem != null)
+            {
+                return (true, findItem);
+            }
+            
             db.TelegramBotInChats.Update(request.newTelegramBotInChat);
             await db.SaveChangesAsync();
 

@@ -2,7 +2,6 @@
 using Telegram.Bot.Types;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
-using IronBarCode;
 using TelegramBot.MessageContext;
 using CQRS.Command.UserInfo;
 using User = DataBase.Entities.Entities_DBContext.User;
@@ -16,6 +15,7 @@ using TelegramBot.Facade;
 using CQRS;
 using CQRS.Query.CustomerCompany;
 using System.Text;
+using CQRS.Query.TelegramBotInChat;
 using TelegramBot.TelegramBotFactory.TelegramBotDto;
 
 namespace TelegramBot;
@@ -1030,7 +1030,8 @@ public partial class TelegramBot : IAsyncDisposable
                             var photo = message
                                 .Photo[^1]; // берем последний элемент массива, который обычно является самым крупным размером
                             var fileId = photo.FileId;
-                            var dir = "downloaded_photos";
+                            var baseDirectory = AppDomain.CurrentDomain.BaseDirectory; // или Directory.GetCurrentDirectory()
+                            var dir = Path.Combine(baseDirectory, "downloaded_photos");
 
                             if (!Directory.Exists(dir))
                             {
@@ -1055,31 +1056,26 @@ public partial class TelegramBot : IAsyncDisposable
                                 Console.WriteLine($"Фотография сохранена: {savePath}");
                             }
 
-                            if (_chanelPostId is not null)
+                            var chanel = await _mediator.Send(new GetTelegramBotInChatCommand
                             {
+                                TelegramBotId = (long)_id
+                            });
+                            
+                            if (chanel is not null )
+                            {
+                                _chanelPostId = chanel.TelegramChatId;
                                 using (var imageStream = new FileStream(savePath, FileMode.Open))
                                 {
                                     MemoryStream stream = new();
                                     imageStream.CopyTo(stream);
                                     stream.Position = 0;
                                     var imageInput = new InputFileStream(stream, $"{textToEncode}.jpg");
-
                                     inlineKeyboard = new(
-                                        new[]
-                                        {
-                                            new[]
-                                            {
-                                                InlineKeyboardButton.WithCallbackData("Фейк",
-                                                    Facade.KeyboardCommand.FaildCheckPictureFromMenager.ToString())
-                                            },
-                                            new[]
-                                            {
-                                                InlineKeyboardButton.WithCallbackData("Подтверить",
-                                                    Facade.KeyboardCommand.ApproveCheckPictureFromMenager.ToString())
-                                            }
-                                        }
+                                      new[] {
+                                     new[] { InlineKeyboardButton.WithCallbackData("Фейк",Facade.KeyboardCommand.FaildCheckPictureFromMenager.ToString()) },
+                                     new[] { InlineKeyboardButton.WithCallbackData("Подтверить", Facade.KeyboardCommand.ApproveCheckPictureFromMenager.ToString()) }
+                                      }
                                     );
-
                                     sentMessage = await botClient.SendPhotoAsync(
                                         chatId: _chanelPostId,
                                         photo: imageInput,
@@ -1091,31 +1087,42 @@ public partial class TelegramBot : IAsyncDisposable
                                         parseMode: ParseMode.Markdown
                                     );
                                 }
+                                
+                                // Создание QR-кода
+                                var qrCodePath = Path.Combine(baseDirectory, "downloaded_photos", $"{textToEncode}_QrCode.svg");
+                                SaveQrCodeToFile("https://avatars.mds.yandex.net/i?id=560e59bc7761ffdc6fcf0193cf42877d9ab7c05b-12393450-images-thumbs&n=13", qrCodePath);
+                        
+                                try
+                                {
+                                    using (var imageStream = new FileStream(qrCodePath, FileMode.Open))
+                                    {
+                                        MemoryStream stream = new();
+                                        imageStream.CopyTo(stream);
+                                        stream.Position = 0;
+                                        //var imageInput = new InputFileStream(stream, "QRCode");
+                                        var imageInput = new InputFileStream(stream, "qr_code.svg");
+                                        sentMessage = await botClient.SendPhotoAsync(
+                                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                            photo: imageInput,
+                                            caption: "Ваш QR код для входа:"
+                                        );
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine(e);
+                                }
                             }
-
-
-                            // Создание QR-кода
-                            var barcode = BarcodeWriter.CreateBarcode(textToEncode, BarcodeEncoding.QRCode);
-                            var qrCodePath = $"downloaded_photos/{textToEncode}_QrCode.jpg";
-                            barcode.Image.SaveAs(qrCodePath);
-
-                            using (var imageStream = new FileStream(qrCodePath, FileMode.Open))
+                            else
                             {
-                                MemoryStream stream = new();
-                                imageStream.CopyTo(stream);
-                                stream.Position = 0;
-                                var imageInput = new InputFileStream(stream, "QRCode");
-
-                                sentMessage = await botClient.SendPhotoAsync(
+                                sentMessage = await botClient.SendTextMessageAsync(
                                     chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                                    photo: imageInput,
-                                    caption: "Ваш QR код для входа:"
-                                );
+                                    text: "Телеграм канал не подключен.",
+                                    replyMarkup: inlineKeyboard,
+                                    cancellationToken: cancellationToken);
                             }
-
-                            _messageContexts.TryRemove(
-                                new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId,
-                                    conxtexMessage));
+                                    
+                                   
                             break;
                         }
                         case TelegramUserState.RegistrationCustomerCompany:

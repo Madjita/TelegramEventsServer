@@ -2,7 +2,6 @@
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot;
 using DataBase.Entities.Entities_DBContext;
-using IronBarCode;
 using Telegram.Bot.Types;
 using TelegramBot.MessageContext;
 using User = DataBase.Entities.Entities_DBContext.User;
@@ -13,6 +12,9 @@ using TelegramBot.Facade;
 using CQRS;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Telegram.Bot.Exceptions;
+using System.Drawing;
+using System.Text;
 
 namespace TelegramBot.TelegramBots.Party;
 
@@ -41,7 +43,7 @@ public partial class PartyTelegramBot : TelegramBot
                 //5) Выводим список Вечеринок (событий) которую нужно выбрать для этого канала.
                 //6) Если все выбранно, то регестрируем чат.
 
-                if(update.MyChatMember!.Chat is not null && update.MyChatMember.Chat.Title == ChanelName)
+                if(update.MyChatMember!.Chat is not null) // && update.MyChatMember.Chat.Title == ChanelName
                 {
                     if (update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Administrator)
                     {
@@ -56,20 +58,49 @@ public partial class PartyTelegramBot : TelegramBot
                             BotId = this.TelegramBotId
                         });
 
-
-                        var response = _mediator.Send(new UpdateTelegramBotInChatCommand
+                        if (result.Success)
                         {
-                            newTelegramBotInChat = new TelegramBotInChats()
+                            var response = _mediator.Send(new UpdateTelegramBotInChatCommand
                             {
-                                TelegramChatId = update.MyChatMember.Chat.Id,
-                                ChatStatus = update.MyChatMember.NewChatMember.Status.ToString(),
-                                ChatTitle = update.MyChatMember.Chat.Title,
-                                ChatType = update.MyChatMember.Chat.Type.ToString(),
-                                TelegramBotId = _id,
-                            }
-                        });
+                                newTelegramBotInChat = new TelegramBotInChats()
+                                {
+                                    TelegramChatId = update.MyChatMember.Chat.Id,
+                                    ChatStatus = update.MyChatMember.NewChatMember.Status.ToString(),
+                                    ChatTitle = update.MyChatMember.Chat.Title,
+                                    ChatType = update.MyChatMember.Chat.Type.ToString(),
+                                    TelegramBotId = _id,
+                                }
+                            });
 
-                        _chanelPostId = update.MyChatMember.Chat.Id;
+                            _chanelPostId = update.MyChatMember.Chat.Id;
+                            
+                            await botClient.SendTextMessageAsync(
+                                chatId: update.MyChatMember.Chat.Id,
+                                text: "Успешно добавлен.",
+                                cancellationToken: cancellationToken);
+                        }
+                        else
+                        {
+                            await botClient.SendTextMessageAsync(
+                                chatId: update.MyChatMember.Chat.Id,
+                                text: "Только зарегестрированные пользователи могут добавлять меня в канал. Простите, я ливаю.",
+                                cancellationToken: cancellationToken);
+                            
+                            try
+                            {
+                                await botClient.LeaveChatAsync(
+                                    chatId: update.MyChatMember.Chat.Id,
+                                    cancellationToken: cancellationToken);
+                            }
+                            catch (ApiRequestException apiEx)
+                            {
+                                Console.WriteLine($"Telegram API Ошибка: {apiEx.Message}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Ошибка: {ex.Message}");
+                            }
+                        }
                     }
                     else if (update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Left || update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Kicked)
                     {
@@ -702,8 +733,14 @@ public partial class PartyTelegramBot : TelegramBot
                                         Console.WriteLine($"Фотография сохранена: {savePath}");
                                     }
 
-                                    if (_chanelPostId is not null )
+                                    var chanel = await _mediator.Send(new GetTelegramBotInChatCommand
                                     {
+                                        TelegramBotId = (long)_id
+                                    });
+    
+                                    if (chanel is not null )
+                                    {
+                                        _chanelPostId = chanel.TelegramChatId;
                                         using (var imageStream = new FileStream(savePath, FileMode.Open))
                                         {
                                             MemoryStream stream = new();
@@ -729,35 +766,42 @@ public partial class PartyTelegramBot : TelegramBot
                                                 parseMode: ParseMode.Markdown
                                             );
                                         }
-                                    }
-                                    
-                                    // Создание QR-кода
-                                    var barcode = BarcodeWriter.CreateBarcode(textToEncode, BarcodeEncoding.QRCode);
-                                    baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                                    var qrCodePath = Path.Combine(baseDirectory, "downloaded_photos", $"{textToEncode}_QrCode.jpg");
-                                    barcode.Image.SaveAs(qrCodePath);
-
-                                    try
-                                    {
-                                        using (var imageStream = new FileStream(qrCodePath, FileMode.Open))
+                                        
+                                        // Создание QR-кода
+                                        var qrCodePath = Path.Combine(baseDirectory, "downloaded_photos", $"{textToEncode}_QrCode.svg");
+                                        SaveQrCodeToFile("https://avatars.mds.yandex.net/i?id=560e59bc7761ffdc6fcf0193cf42877d9ab7c05b-12393450-images-thumbs&n=13", qrCodePath);
+                                
+                                        try
                                         {
-                                            MemoryStream stream = new();
-                                            imageStream.CopyTo(stream);
-                                            stream.Position = 0;
-                                            var imageInput = new InputFileStream(stream, "QRCode");
+                                            using (var imageStream = new FileStream(qrCodePath, FileMode.Open))
+                                            {
+                                                MemoryStream stream = new();
+                                                imageStream.CopyTo(stream);
+                                                stream.Position = 0;
+                                                //var imageInput = new InputFileStream(stream, "QRCode");
+                                                var imageInput = new InputFileStream(stream, "qr_code.svg");
 
-                                            sentMessage = await botClient.SendPhotoAsync(
-                                                chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                                                photo: imageInput,
-                                                caption: "Ваш QR код для входа:"
-                                            );
+                                                sentMessage = await botClient.SendPhotoAsync(
+                                                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                                    photo: imageInput,
+                                                    caption: "Ваш QR код для входа:"
+                                                );
+                                            }
                                         }
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        Console.WriteLine(e);
-                                    }
+                                        catch (Exception e)
+                                        {
+                                            Console.WriteLine(e);
+                                        }
 
+                                    }
+                                    else
+                                    {
+                                        sentMessage = await botClient.SendTextMessageAsync(
+                                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                            text: "Телеграм канал не подключен.",
+                                            replyMarkup: inlineKeyboard,
+                                            cancellationToken: cancellationToken);
+                                    }
                                     _messageContexts.TryRemove(new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, conxtexMessage));
                                     break;
                                 }

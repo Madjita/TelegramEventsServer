@@ -259,6 +259,7 @@ namespace MailParserMicroService
             serviceCollection.AddScoped<IRequestHandler<UpdateXOrgUserCommand, bool>, UpdateXOrgUserCommandHandler>();
             
             serviceCollection.AddScoped<IRequestHandler<DeleteTelegramBotInChatCommand, bool>, DeleteTelegramBotInChatCommandHandler>();
+            serviceCollection.AddScoped<IRequestHandler<GetTelegramBotInChatCommand, TelegramBotInChats>,GetTelegramBotInChatCommandHandler>();
             serviceCollection.AddScoped<IRequestHandler<UpdateTelegramBotInChatCommand, (bool Success, TelegramBotInChats? newTelegramBotInChat)>, UpdateTelegramBotInChatCommandHandler>();
             serviceCollection.AddScoped<IRequestHandler<CheckExistOrgCommand, (bool Success, Org? customerCompany)>, CheckExistOrgCommandHandler>();
             serviceCollection.AddScoped<IRequestHandler<GetOrgByIdCommand, (bool Success, Org? customerCompany)>, GetOrgByIdCommandHandler>();

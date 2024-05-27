@@ -88,6 +88,7 @@ namespace TelegramBot.Facade
         EndRegistrationBot,
         AddAdministratorInOrg, // Добавить администратора на конкретную организацию.
         SettingsAdministratorsInOrg, // Кнопка настроек администраторов в организации
+        StartCreateEvent, // Добавить событие конкретному телеграм боту
 
 
         //

@@ -9,7 +9,13 @@ using TelegramBot.Facade;
 using Microsoft.Extensions.DependencyInjection;
 using TelegramBot.MessageContext;
 using System.Collections.Concurrent;
+using System.Drawing.Imaging;
 using Utils.Managers;
+using ZXing;
+using ZXing.Common;
+using ZXing.Rendering;
+using ZXing.Windows.Compatibility;
+using File = System.IO.File;
 
 namespace TelegramBot
 {
@@ -237,6 +243,47 @@ namespace TelegramBot
                 GC.SuppressFinalize(this);
                 _isDisposed = true;
             }
+        }
+        
+        public static string DrawQrCode(string url)
+        {
+            var width = 250;
+            var height = 250;
+            var margin = 0;
+
+            var qrCodeWriter = new BarcodeWriterSvg()
+            {
+                Format = BarcodeFormat.QR_CODE,
+                Renderer = new SvgRenderer
+                {
+                    Foreground = SvgRenderer.Color.Black
+                },
+                Options = new EncodingOptions
+                {
+                    Height = height,
+                    Width = width,
+                    PureBarcode = true,
+                    Margin = margin,
+                }
+            };
+
+            var svg = qrCodeWriter.Write(url);
+            return svg.Content.Replace("<!-- Created with ZXing.Net (http://zxingnet.codeplex.com/) -->","");
+        }
+        
+        public static void SaveQrCodeToFile(string url, string filePath)
+        {
+            
+            var barcodeWriter = new BarcodeWriter();
+            barcodeWriter.Format = BarcodeFormat.QR_CODE;
+            barcodeWriter.Options.Width = 200;
+            barcodeWriter.Options.Height = 200;
+
+            var barcodeBitmap = barcodeWriter.Write(url);
+            barcodeBitmap.Save(filePath, ImageFormat.Png);
+            
+            //var svgContent = DrawQrCode(url);
+            //File.WriteAllText(filePath, svgContent);
         }
     }
 }
