@@ -68,7 +68,7 @@ namespace TelegramBot
             _botClient = new TelegramBotClient(_botToken);
 
             //Создать фасад к телеграм Боту.
-            _telegramBotFacade = new TelegramBotFacade(_logger, _scopeFactory);
+            _telegramBotFacade = new TelegramBotFacade(TelegramBotId, _logger, _scopeFactory);
 
             _telegramBotWorkerManager = _scopeFactory.CreateScope().ServiceProvider.GetService<ITelegramBotWorkerManager>()!;
 

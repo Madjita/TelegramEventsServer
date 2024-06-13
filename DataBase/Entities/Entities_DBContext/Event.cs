@@ -14,7 +14,7 @@ namespace DataBase.Entities.Entities_DBContext
         public long TelegramChatId { get; set; }
 
         [Column("start_Date")]
-        public long StartDate { get; set; }
+        public DateTime StartDate { get; set; }
 
         [Column("name")]
         public string Name { get; set; }
@@ -36,6 +36,9 @@ namespace DataBase.Entities.Entities_DBContext
 
         [Column("is_deleted")]
         public bool IsDeleted { get; set; }
+        
+        [Column("manager_title_channel")]
+        public string ManagerTitleChannel { get; set; }
 
         public TelegramBots TelegramBot { get; set; }
     }

@@ -1,4 +1,5 @@
-﻿using Telegram.Bot.Types.ReplyMarkups;
+﻿using System.Globalization;
+using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
@@ -17,6 +18,7 @@ using CQRS.Query.CustomerCompany;
 using System.Text;
 using CQRS.Query.TelegramBotInChat;
 using TelegramBot.TelegramBotFactory.TelegramBotDto;
+using TelegramBot.TelegramBots.MainManager;
 
 namespace TelegramBot;
 
@@ -339,7 +341,8 @@ public partial class TelegramBot : IAsyncDisposable
                         InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}"));
                     InlineKeyboardMarkup? inlineKeyboard = new(buttons);
 
-                    var added = _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
+                    var added = _messageContexts.AddOrUpdate(telegramUser.TelegramChatId, newContext,
+                        (existingKey, existingValue) => newContext);
 
                     await botClient.EditMessageTextAsync(
                         chatId: telegramUser.TelegramChatId,
@@ -1002,6 +1005,21 @@ public partial class TelegramBot : IAsyncDisposable
             {
                 if (conxtexMessage != null)
                 {
+
+                    var commandContextStrategy = ContextCommandFactory.GetBaseStrategy(message, botClient, _mediator, conxtexMessage, _scopeFactory, _telegramBotFacade);
+                    if(commandContextStrategy is null)
+                        break;
+                    
+                    var responseContextStrategy =  await commandContextStrategy.Execute(telegramUser, messageText, cancellationToken: cancellationToken);
+                    if (responseContextStrategy.DeleteCurrentContext)
+                    {
+                        _messageContexts.TryRemove(
+                            new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, null));
+                    }
+
+                    sentMessage = responseContextStrategy.SentMessage;
+                    
+                    /*
                     switch (conxtexMessage.State)
                     {
                         case TelegramUserState.WritedFIOandPhoneYourSelf
@@ -1472,7 +1490,74 @@ public partial class TelegramBot : IAsyncDisposable
                             
                             break;
                         }
+                        case TelegramUserState.WriteEvent:
+                        {
+                            EventFromUserDto? eventFromUserDto = null;
+
+                            //Сохранить событие после того как пользователь введет данные
+                            // Ищем подстроки после ":"
+                            string[] parts = messageText.ReplaceLineEndings(string.Empty).Split(';');
+
+                            // Проверяем, что есть хотя бы две части (название бота и токен)
+                            if (parts.Length >= 6)
+                            {
+                                eventFromUserDto = new EventFromUserDto
+                                {
+                                    EventName = parts[0],
+                                    EventStartData = parts[1],
+                                    Price = parts[2],
+                                    PriceWithRef = parts[3],
+                                    PriceInDayParty = parts[4],
+                                    FreeEvent = parts[5],
+                                    ManagerTitleChannel = parts[6]
+                                };
+
+                            }
+                            
+                            if(eventFromUserDto is null)
+                                break;
+                            
+                            var date = DateTime.ParseExact(eventFromUserDto.EventStartData, "dd.MM.yyyy", CultureInfo.InvariantCulture);
+                            
+                            var updateEventsCommand = new UpdateEventsCommand
+                            {
+                                newEvent = new Event()
+                                {
+                                    StartDate = date.ToUniversalTime(),
+                                    Name = eventFromUserDto.EventName,
+                                    Price = Convert.ToInt16(eventFromUserDto.Price),
+                                    PriceWithRef = Convert.ToInt16(eventFromUserDto.PriceWithRef),
+                                    PriceInDayParty = Convert.ToInt16(eventFromUserDto.PriceInDayParty),
+                                    FreeForNoDanser =
+                                        eventFromUserDto.FreeEvent.Equals("да", StringComparison.OrdinalIgnoreCase),
+                                    ManagerTitleChannel = eventFromUserDto.ManagerTitleChannel,
+                                    TelegramBotId = conxtexMessage.SelectTelegramBot.Id
+                                }
+                            };
+                                
+                            var checkUserAdministrator = await _mediator.Send(updateEventsCommand);
+
+                            if (checkUserAdministrator.Success)
+                            {
+                                sentMessage = await botClient.SendTextMessageAsync(
+                                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                    text: "Создание события прошло успешно.",
+                                    replyMarkup: inlineKeyboard,
+                                    cancellationToken: cancellationToken);
+                            }
+                            else
+                            {
+                                sentMessage = await botClient.SendTextMessageAsync(
+                                    chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                                    text: "Произошла ошибка при сохранении события.",
+                                    replyMarkup: inlineKeyboard,
+                                    cancellationToken: cancellationToken);
+                            }
+                            
+                            break;
+                        }
                     }
+                    */
                 }
 
                 break;

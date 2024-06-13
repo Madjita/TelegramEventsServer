@@ -160,16 +160,21 @@ namespace TelegramBot.Facade
         //Start buttons
         InlineKeyboardMarkup StartManagerButtons(IMediator mediator, User responceUser, int currentPage = 0, int companiesPerPage = 4);
         Task<User?> FindUser(IMediator mediator, User requestTelegramUser, bool isDeleted = false);
+        
+        public int CurrentTelegramBotId { get; }
     }
 
     public class TelegramBotFacade : ITelegramBotFacade
     {
         private readonly IMyLogger _logger;
         private readonly IServiceScopeFactory _scopeFactory;
-        public TelegramBotFacade (IMyLogger logger, IServiceScopeFactory scopeFactory)
+        public int CurrentTelegramBotId { get; private set; }
+        
+        public TelegramBotFacade (int currentTelegramBotId, IMyLogger logger, IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
             _scopeFactory = scopeFactory;
+            CurrentTelegramBotId = currentTelegramBotId;
         }
         
         public async Task<User?> FindUser(IMediator mediator, User requestTelegramUser, bool isDeleted = false)
