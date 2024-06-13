@@ -828,10 +828,15 @@ public partial class TelegramBot : IAsyncDisposable
                                    + "нет;\n"
                                    + "PerfectoParty;\n";
                     
+                    List<List<InlineKeyboardButton>> buttons = new();
+                    TelegramBot.AddButtonCansel(buttons);
+                    var inlineKeyboard = new InlineKeyboardMarkup(buttons);
+                    
                     await botClient.EditMessageTextAsync(
                         chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
                         messageId: query.Message.MessageId,
                         text: responceText,
+                        replyMarkup: inlineKeyboard,
                         cancellationToken: cancellationToken);
 
                     break;
@@ -1087,7 +1092,7 @@ public partial class TelegramBot : IAsyncDisposable
         throw new NotImplementedException();
     }
 
-    public void AddButtonCansel(List<List<InlineKeyboardButton>> buttons)
+    public static void AddButtonCansel(List<List<InlineKeyboardButton>> buttons)
     {
         if (buttons is null)
         {

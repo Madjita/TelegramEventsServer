@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBot.Facade;
 using TelegramBot.MessageContext;
 using TelegramBot.TelegramBotFactory.TelegramBotDto;
@@ -71,7 +72,11 @@ public class WriteEventCommandContextStrategy : BaseCommandContextStrategy
              }
         }; 
         var checkUserAdministrator = await _mediator.Send(updateEventsCommand, cancellationToken);
-         
+        
+        List<List<InlineKeyboardButton>> buttons = new();
+        TelegramBot.AddButtonCansel(buttons);
+        _inlineKeyboard = new InlineKeyboardMarkup(buttons);
+        
         if (checkUserAdministrator.Success)
         {
             responseDto.SentMessage = await _botClient.SendTextMessageAsync(
