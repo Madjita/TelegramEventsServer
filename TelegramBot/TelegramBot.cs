@@ -281,9 +281,6 @@ namespace TelegramBot
 
             var barcodeBitmap = barcodeWriter.Write(url);
             barcodeBitmap.Save(filePath, ImageFormat.Png);
-            
-            //var svgContent = DrawQrCode(url);
-            //File.WriteAllText(filePath, svgContent);
         }
     }
 }

@@ -39,6 +39,7 @@ namespace TelegramBot.Facade
         SelectCompany,
         
         WriteAdministratorNikNameForAddInOrg, // ждем когда пользователь впишет ник нейм администратора
+        WriteEvent, // ждем когда пользователь впишет событие для создания
 
 
         //weatherTelegramBot
@@ -88,7 +89,9 @@ namespace TelegramBot.Facade
         EndRegistrationBot,
         AddAdministratorInOrg, // Добавить администратора на конкретную организацию.
         SettingsAdministratorsInOrg, // Кнопка настроек администраторов в организации
-        StartCreateEvent, // Добавить событие конкретному телеграм боту
+        
+        SettingsEvents, // Кнопка настроек событий
+        StartCreateEvent, // Добавить событие к конкретному телеграм боту
 
 
         //

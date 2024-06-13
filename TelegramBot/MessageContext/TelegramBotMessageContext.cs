@@ -1,10 +1,5 @@
 ﻿using DataBase.Entities.Entities_DBContext;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TelegramBot.Facade;
 
 namespace TelegramBot.MessageContext
@@ -27,6 +22,7 @@ namespace TelegramBot.MessageContext
         public string? LastMessage { get; set; }
         public User TelegramUser { get; set; }
         public Org Org { get; set; }
+        public DataBase.Entities.Entities_DBContext.TelegramBots SelectTelegramBot { get; set; }
         public int TelegramBotTypeId  { get; set; }
         public UserInfo UserInfo { get; set; }
         

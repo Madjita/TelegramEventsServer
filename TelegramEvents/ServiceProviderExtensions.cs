@@ -268,7 +268,8 @@ namespace MailParserMicroService
             serviceCollection.AddScoped<IRequestHandler<UpdateRegistrationOnEventsCommand, (bool Success, XEventUser? registrationOnEvents)>, UpdateRegistrationOnEventsCommandHandler>();
             serviceCollection.AddScoped<IRequestHandler<CheckExistWhoCreatedOrgCommand, (bool Success, List<Org> org, int totalRecords)>, CheckExistWhoCreatedOrgCommandHandler>();
             serviceCollection.AddScoped<IRequestHandler<GetAllTelegramBotByOrgIdQuery, IEnumerable<TelegramBots>>, GetAllTelegramBotByOrgIdQueryHandler>();
-            serviceCollection.AddScoped<IRequestHandler<CheckExistTelegramBotByTokenQuery, TelegramBots?>, GetAllTelegramBotByOrgIdQueryHandler >();
+            serviceCollection.AddScoped<IRequestHandler<CheckExistTelegramBotByTokenQuery, TelegramBots?>, GetAllTelegramBotByOrgIdQueryHandler>();
+            serviceCollection.AddScoped<IRequestHandler<GetTelegramBotByIdQuery, TelegramBots?>, GetAllTelegramBotByOrgIdQueryHandler>();
 
 
             //weather

@@ -53,8 +53,8 @@ public partial class TelegramBot : IAsyncDisposable
                 /*
               InlineKeyboardMarkup? inlineKeyboard = new(
                 new[] {
-                  new[] { InlineKeyboardButton.WithCallbackData("Фейк",Facade.KeyboardCommand.FaildCheckPictureFromMenager.ToString()) },
-                  new[] { InlineKeyboardButton.WithCallbackData("Подтверить", Facade.KeyboardCommand.ApproveCheckPictureFromMenager.ToString()) }
+                  new[] { InlineKeyboardButton.WithCallbackData("Фейк",KeyboardCommand.FaildCheckPictureFromMenager.ToString()) },
+                  new[] { InlineKeyboardButton.WithCallbackData("Подтверить", KeyboardCommand.ApproveCheckPictureFromMenager.ToString()) }
                 }
              );
 
@@ -84,15 +84,15 @@ public partial class TelegramBot : IAsyncDisposable
         var command = parametrs[0];
         string responseText = string.Empty;
 
-        if (Enum.TryParse<Facade.KeyboardCommand>(command, out var parsedEnum))
+        if (Enum.TryParse<KeyboardCommand>(command, out var parsedEnum))
         {
             switch (parsedEnum)
             {
-                case Facade.KeyboardCommand.StartRegistrationFriend:
+                case KeyboardCommand.StartRegistrationFriend:
                 {
                     break;
                 }
-                case Facade.KeyboardCommand.StartRegistrationYourSelf:
+                case KeyboardCommand.StartRegistrationYourSelf:
                 {
                     responseText = $"Танцуете ?";
                     InlineKeyboardMarkup? inlineKeyboard = new(
@@ -101,12 +101,12 @@ public partial class TelegramBot : IAsyncDisposable
                             new[]
                             {
                                 InlineKeyboardButton.WithCallbackData("Не танцующий",
-                                    Facade.KeyboardCommand.StartRegistrationNoDancer.ToString())
+                                    KeyboardCommand.StartRegistrationNoDancer.ToString())
                             },
                             new[]
                             {
                                 InlineKeyboardButton.WithCallbackData("Танцующий",
-                                    Facade.KeyboardCommand.StartRegistrationDancer.ToString())
+                                    KeyboardCommand.StartRegistrationDancer.ToString())
                             }
                         }
                     );
@@ -118,14 +118,14 @@ public partial class TelegramBot : IAsyncDisposable
                         cancellationToken: cancellationToken);
                     break;
                 }
-                case Facade.KeyboardCommand.StartRegistrationDancer:
+                case KeyboardCommand.StartRegistrationDancer:
                 {
                     responseText = $"Введите Фамилию Имя Отчетсво и номер телефона через пробелы.";
 
                     var newContext = new MessageContext.TelegramBotMessageContext()
                     {
                         LastCommand = command,
-                        State = Facade.TelegramUserState.WritedFIOandPhoneYourSelf,
+                        State = TelegramUserState.WritedFIOandPhoneYourSelf,
                         TelegramUser = telegramUser,
                         LastMessage = command,
                     };
@@ -137,7 +137,7 @@ public partial class TelegramBot : IAsyncDisposable
                         cancellationToken: cancellationToken);
                     break;
                 }
-                case Facade.KeyboardCommand.EditRegistrationFIOandPhone:
+                case KeyboardCommand.EditRegistrationFIOandPhone:
                 {
                     TelegramBotMessageContext? messageContext = null;
                     if (!_messageContexts.TryGetValue(telegramUser.TelegramChatId, out messageContext))
@@ -154,7 +154,7 @@ public partial class TelegramBot : IAsyncDisposable
                         "Вы вводили:\n" +
                         messageContext.LastMessage;
 
-                    messageContext.State = Facade.TelegramUserState.EditRegistrationFIOandPhone;
+                    messageContext.State = TelegramUserState.EditRegistrationFIOandPhone;
 
                     await botClient.SendTextMessageAsync(
                         chatId: telegramUser.TelegramChatId,
@@ -162,7 +162,7 @@ public partial class TelegramBot : IAsyncDisposable
                         cancellationToken: cancellationToken);
                     break;
                 }
-                case Facade.KeyboardCommand.BreakRegistration:
+                case KeyboardCommand.BreakRegistration:
                 {
                     if (_messageContexts.TryGetValue(telegramUser.TelegramChatId, out var value))
                     {
@@ -175,12 +175,12 @@ public partial class TelegramBot : IAsyncDisposable
                                 new[]
                                 {
                                     InlineKeyboardButton.WithCallbackData("Не танцующий",
-                                        Facade.KeyboardCommand.StartRegistrationNoDancer.ToString())
+                                        KeyboardCommand.StartRegistrationNoDancer.ToString())
                                 },
                                 new[]
                                 {
                                     InlineKeyboardButton.WithCallbackData("Танцующий",
-                                        Facade.KeyboardCommand.StartRegistrationDancer.ToString())
+                                        KeyboardCommand.StartRegistrationDancer.ToString())
                                 }
                             }
                         );
@@ -194,11 +194,11 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.ApproveRegistrationFIOandPhone:
+                case KeyboardCommand.ApproveRegistrationFIOandPhone:
                 {
                     if (_messageContexts.TryGetValue(telegramUser.TelegramChatId, out var value))
                     {
-                        value.State = Facade.TelegramUserState.SendedCheckPicture;
+                        value.State = TelegramUserState.SendedCheckPicture;
 
                         var today = DateTime.Now;
                         var PartyDate = new DateTime(DateTime.Now.Year, 12, 22);
@@ -231,7 +231,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.FaildCheckPictureFromMenager:
+                case KeyboardCommand.FaildCheckPictureFromMenager:
                 {
                     if (query.Message.Caption is not null)
                     {
@@ -252,7 +252,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.ApproveCheckPictureFromMenager:
+                case KeyboardCommand.ApproveCheckPictureFromMenager:
                 {
                     if (query.Message.Caption is not null)
                     {
@@ -274,7 +274,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.ExitFromBot:
+                case KeyboardCommand.ExitFromBot:
                 {
                     //Выйти из чата
                     var response = await _telegramBotFacade.Exit(this, telegramUser);
@@ -299,7 +299,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.ExitFromBotNo:
+                case KeyboardCommand.ExitFromBotNo:
                 {
                     await botClient.EditMessageTextAsync(
                         chatId: query.Message.Chat.Id,
@@ -307,7 +307,7 @@ public partial class TelegramBot : IAsyncDisposable
                         text: "Не хотите, как хотите.");
                     break;
                 }
-                case Facade.KeyboardCommand.ExitFromBotYes:
+                case KeyboardCommand.ExitFromBotYes:
                 {
                     //Активировать пользователя.
                     var response = await _telegramBotFacade.ActivateUser(this, telegramUser);
@@ -320,7 +320,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.StartRegistrationCompany:
+                case KeyboardCommand.StartRegistrationCompany:
                 {
                     string responceText = "Регистрация компании.\n"
                                           + "Введите название компании:";
@@ -328,7 +328,7 @@ public partial class TelegramBot : IAsyncDisposable
                     var newContext = new MessageContext.TelegramBotMessageContext()
                     {
                         LastCommand = command,
-                        State = Facade.TelegramUserState.RegistrationCustomerCompany,
+                        State = TelegramUserState.RegistrationCustomerCompany,
                         TelegramUser = telegramUser,
                         LastMessage = responceText,
                     };
@@ -349,8 +349,8 @@ public partial class TelegramBot : IAsyncDisposable
                         cancellationToken: cancellationToken);
                     break;
                 }
-                case Facade.KeyboardCommand.PageCompanyPrevPage:
-                case Facade.KeyboardCommand.PageCompanyNextPage:
+                case KeyboardCommand.PageCompanyPrevPage:
+                case KeyboardCommand.PageCompanyNextPage:
                 {
                     var userFromBD = await FindUser(telegramUser);
                     if (userFromBD is null) break;
@@ -365,8 +365,8 @@ public partial class TelegramBot : IAsyncDisposable
                         cancellationToken: cancellationToken);
                     break;
                 }
-                case Facade.KeyboardCommand.PageTelegramBotInOrgPrevPage:
-                case Facade.KeyboardCommand.PageTelegramBotInOrgNextPage:
+                case KeyboardCommand.PageTelegramBotInOrgPrevPage:
+                case KeyboardCommand.PageTelegramBotInOrgNextPage:
                 {
                     var userFromBD = await FindUser(telegramUser);
                     if (userFromBD is null) break;
@@ -385,20 +385,41 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.SelectTelegramBot:
+                case KeyboardCommand.SelectTelegramBot:
                 {
                     //Выбираем Телеграм бот в организации для настройки
                     //Выводим на экран кнопки которые позволяют настроить выбранного бота.
-                    var telegamBotId = parametrs[1].ToInt();
 
-                    var responceText = "Тут должны быть настройки выбранного бота.";
+                    var commandGetSelectTelegramBot = new GetTelegramBotByIdQuery() { Id = parametrs[1].ToInt() };
+                    var selectTelegramBot = await _mediator.Send(commandGetSelectTelegramBot);
+                    string responceText = string.Empty;
+
+                    if (selectTelegramBot is null)
+                    {
+                        responceText = $"Выбранного бота не сущесвтует в БД.";
+                        await botClient.EditMessageTextAsync(
+                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                            messageId: query.Message.MessageId,
+                            text: responceText,
+                            cancellationToken: cancellationToken);
+                        break;
+                    }
+                    
+                    responceText = $"Выбран бот: \"{selectTelegramBot.TelegramBotName}\" для настройки.\n";
 
                     //1) Добавить кнопку отображения событий.
 
                     List<List<InlineKeyboardButton>> buttons = new();
-                    buttons.Add(new List<InlineKeyboardButton>());
-                    buttons.FirstOrDefault()
-                        ?.Add(InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}"));
+                    
+                    buttons.Add(new List<InlineKeyboardButton>()
+                    {
+                        InlineKeyboardButton.WithCallbackData("Настройка событий", $"{KeyboardCommand.SettingsEvents} {commandGetSelectTelegramBot.Id}"),
+                    });
+                    
+                    buttons.Add(new List<InlineKeyboardButton>()
+                    {
+                        InlineKeyboardButton.WithCallbackData("Завершить", $"{KeyboardCommand.CanselOperation}")
+                    });
 
                     InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(buttons);
 
@@ -411,7 +432,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.SelectCompany:
+                case KeyboardCommand.SelectCompany:
                 {
                     //Выбираем организацию
                     //1) Показываем кнопку Зарегестрировать телеграм бота
@@ -447,7 +468,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.SelectAlreadyRegistrationCompany:
+                case KeyboardCommand.SelectAlreadyRegistrationCompany:
                 {
                     var response = await SelectCompany(telegramUser);
 
@@ -456,7 +477,7 @@ public partial class TelegramBot : IAsyncDisposable
                     var newContext = new MessageContext.TelegramBotMessageContext()
                     {
                         LastCommand = command,
-                        State = Facade.TelegramUserState.SelectCompany,
+                        State = TelegramUserState.SelectCompany,
                         TelegramUser = telegramUser,
                         LastMessage = responceText,
                     };
@@ -471,7 +492,7 @@ public partial class TelegramBot : IAsyncDisposable
                         cancellationToken: cancellationToken);
                     break;
                 }
-                case Facade.KeyboardCommand.StartRegistrationBot:
+                case KeyboardCommand.StartRegistrationBot:
                 {
                     var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
                     var organization = await _mediator.Send(commandGetOrg);
@@ -506,7 +527,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.SettingsAdministratorsInOrg:
+                case KeyboardCommand.SettingsAdministratorsInOrg:
                 {
                     // Реализовать отображение кнопок настроек администаторов в текущей организации
                     // 1) Текущие администраторы (список)
@@ -533,8 +554,8 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.PageAdministratorInOrgPrevPage:
-                case Facade.KeyboardCommand.PageAdministratorInOrgNextPage:
+                case KeyboardCommand.PageAdministratorInOrgPrevPage:
+                case KeyboardCommand.PageAdministratorInOrgNextPage:
                 {
                     var userFromBD = await FindUser(telegramUser);
                     if (userFromBD is null) break;
@@ -553,7 +574,7 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.AddAdministratorInOrg:
+                case KeyboardCommand.AddAdministratorInOrg:
                 {
                     //Реализовать логику вписывания Ник нейма пользователя, чтоб потом найти его в базе и добавить к организации.
                     var commandGetOrg = new GetOrgByIdCommand() { Id = parametrs[1].ToInt() };
@@ -563,7 +584,7 @@ public partial class TelegramBot : IAsyncDisposable
                     var newContext = new MessageContext.TelegramBotMessageContext()
                     {
                         LastCommand = command,
-                        State = Facade.TelegramUserState.WriteAdministratorNikNameForAddInOrg,
+                        State = TelegramUserState.WriteAdministratorNikNameForAddInOrg,
                         TelegramUser = telegramUser,
                         LastMessage = command,
                         Org = new Org()
@@ -588,7 +609,7 @@ public partial class TelegramBot : IAsyncDisposable
                         replyMarkup: inlineKeyboard);
                     break;
                 }
-                case Facade.KeyboardCommand.SelectBotType:
+                case KeyboardCommand.SelectBotType:
                 {
                     //Выбранная организация и тип создаваемого бота
                     //1) Идем создавать бота
@@ -615,8 +636,8 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.PageBotTypePrevPage:
-                case Facade.KeyboardCommand.PageBotTypeNextPage:
+                case KeyboardCommand.PageBotTypePrevPage:
+                case KeyboardCommand.PageBotTypeNextPage:
                 {
                     var userFromBD = await FindUser(telegramUser);
                     if (userFromBD is null) break;
@@ -631,7 +652,7 @@ public partial class TelegramBot : IAsyncDisposable
                         cancellationToken: cancellationToken);
                     break;
                 }
-                case Facade.KeyboardCommand.StartCreationBot:
+                case KeyboardCommand.StartCreationBot:
                 {
                     //Выбранная организация и тип создаваемого бота
                     //1) Идем создавать бота
@@ -664,7 +685,7 @@ public partial class TelegramBot : IAsyncDisposable
                     var newContext = new MessageContext.TelegramBotMessageContext()
                     {
                         LastCommand = command,
-                        State = Facade.TelegramUserState.RegistrationTelegramBot,
+                        State = TelegramUserState.RegistrationTelegramBot,
                         TelegramUser = telegramUser,
                         LastMessage = command,
                         Org = organization.customerCompany,
@@ -686,11 +707,11 @@ public partial class TelegramBot : IAsyncDisposable
 
                     break;
                 }
-                case Facade.KeyboardCommand.EndRegistrationBot:
+                case KeyboardCommand.EndRegistrationBot:
                 {
                     break;
                 }
-                case Facade.KeyboardCommand.CanselOperation:
+                case KeyboardCommand.CanselOperation:
                 {
                     _messageContexts.TryRemove(
                         new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, null));
@@ -706,6 +727,109 @@ public partial class TelegramBot : IAsyncDisposable
                         text: responceText,
                         cancellationToken: cancellationToken,
                         replyMarkup: responce.InlineKeyboard);
+
+                    break;
+                }
+                case KeyboardCommand.SettingsEvents:
+                {
+                    //Добавить обраотку кнопки настройки событий
+                    //1) Отобразить текущеие созданные события на выбранном боте
+                    //2) Добавить кнпоку Создать событие
+
+                    var paramsSelectBotId = parametrs[1].ToInt();
+                    
+                    var commandGetSelectTelegramBot = new GetTelegramBotByIdQuery() { Id = parametrs[1].ToInt() };
+                    var selectTelegramBot = await _mediator.Send(commandGetSelectTelegramBot);
+                    string responceText = string.Empty;
+
+                    if (selectTelegramBot is null)
+                    {
+                        responceText = $"Выбранного бота не сущесвтует в БД.";
+                        await botClient.EditMessageTextAsync(
+                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                            messageId: query.Message.MessageId,
+                            text: responceText,
+                            cancellationToken: cancellationToken);
+                        break;
+                    }
+                    
+                    responceText = $"Выбран бот: \"{selectTelegramBot.TelegramBotName}\" для настройки событий.\n";
+
+                    //1) Добавить кнопку отображения событий.
+
+                    List<List<InlineKeyboardButton>> buttons = new();
+                    
+                    buttons.Add(new List<InlineKeyboardButton>()
+                    {
+                        InlineKeyboardButton.WithCallbackData("Создать событие", $"{KeyboardCommand.StartCreateEvent} {commandGetSelectTelegramBot.Id}"),
+                    });
+                    
+                    AddButtonCansel(buttons);
+
+                    InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(buttons);
+
+                    await botClient.EditMessageTextAsync(
+                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                        messageId: query.Message.MessageId,
+                        text: $"{responceText}",
+                        cancellationToken: cancellationToken,
+                        replyMarkup: inlineKeyboard);
+                    
+                    break;
+                }
+                case KeyboardCommand.StartCreateEvent:
+                {
+                    var commandGetSelectTelegramBot = new GetTelegramBotByIdQuery() { Id = parametrs[1].ToInt() };
+                    var selectTelegramBot = await _mediator.Send(commandGetSelectTelegramBot);
+                    string responceText = string.Empty;
+
+                    if (selectTelegramBot is null)
+                    {
+                        responceText = $"Выбранного бота не сущесвтует в БД.";
+                        await botClient.EditMessageTextAsync(
+                            chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                            messageId: query.Message.MessageId,
+                            text: responceText,
+                            cancellationToken: cancellationToken);
+                        break;
+                    }
+                    
+                    var newContext = new MessageContext.TelegramBotMessageContext()
+                    {
+                        LastCommand = command,
+                        State = TelegramUserState.WriteEvent,
+                        TelegramUser = telegramUser,
+                        LastMessage = command,
+                        SelectTelegramBot = selectTelegramBot
+                    };
+                    
+                    _messageContexts.AddOrUpdate(telegramUser.TelegramChatId, newContext,
+                        (existingKey, existingValue) => newContext);
+                    
+                    //Введите информацию для регестриации бота
+                    responceText = $"1) Введите Название события.\n"
+                                   + "2) Дата проведения события (дд.мм.гггг).\n"
+                                   + "3) Стоимость (число).\n"
+                                   + "4) Стоимость если есть репост (число).\n"
+                                   + "5) Стоимость в день события (число).\n"
+                                   + "6) Напишите \"да\", если хотите, чтоб новому клиенту событие было бесплатно.\n"
+                                   + "7) Название канала куда будет приходить информация для администраторов.\n"
+
+                                   + "Cимовл *;* обязателен в конце каждого типа данных, кроме последней строки. Дату вводить в формате *дд.мм.гггг*\n\n\n"
+                                   + "Пример:\n"
+                                   + "Новогодняя вечеринка;\n"
+                                   + "27.05.2024;\n"
+                                   + "100;\n"
+                                   + "100;\n"
+                                   + "100;\n"
+                                   + "нет;\n"
+                                   + "PerfectoParty;\n";
+                    
+                    await botClient.EditMessageTextAsync(
+                        chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                        messageId: query.Message.MessageId,
+                        text: responceText,
+                        cancellationToken: cancellationToken);
 
                     break;
                 }
@@ -800,7 +924,7 @@ public partial class TelegramBot : IAsyncDisposable
                 var newContext = new MessageContext.TelegramBotMessageContext()
                 {
                     LastCommand = messageText?.ToLower(),
-                    State = Facade.TelegramUserState.RegistrationCustomerCompany,
+                    State = TelegramUserState.RegistrationCustomerCompany,
                     TelegramUser = telegramUser,
                     LastMessage = responceText,
                 };
@@ -837,7 +961,7 @@ public partial class TelegramBot : IAsyncDisposable
                 var newContext = new MessageContext.TelegramBotMessageContext()
                 {
                     LastCommand = messageText?.ToLower(),
-                    State = Facade.TelegramUserState.RegistrationParty,
+                    State = TelegramUserState.RegistrationParty,
                     TelegramUser = telegramUser,
                     LastMessage = responceText,
                 };
@@ -971,17 +1095,17 @@ public partial class TelegramBot : IAsyncDisposable
                                         new[]
                                         {
                                             InlineKeyboardButton.WithCallbackData("Завершить регистрацию",
-                                                Facade.KeyboardCommand.BreakRegistration.ToString())
+                                                KeyboardCommand.BreakRegistration.ToString())
                                         },
                                         new[]
                                         {
                                             InlineKeyboardButton.WithCallbackData("Редактировать",
-                                                Facade.KeyboardCommand.EditRegistrationFIOandPhone.ToString())
+                                                KeyboardCommand.EditRegistrationFIOandPhone.ToString())
                                         },
                                         new[]
                                         {
                                             InlineKeyboardButton.WithCallbackData("Верные",
-                                                Facade.KeyboardCommand.ApproveRegistrationFIOandPhone.ToString())
+                                                KeyboardCommand.ApproveRegistrationFIOandPhone.ToString())
                                         }
                                     }
                                 );
@@ -1001,12 +1125,12 @@ public partial class TelegramBot : IAsyncDisposable
                                         new[]
                                         {
                                             InlineKeyboardButton.WithCallbackData("Завершить регистрацию",
-                                                Facade.KeyboardCommand.BreakRegistration.ToString())
+                                                KeyboardCommand.BreakRegistration.ToString())
                                         },
                                         new[]
                                         {
                                             InlineKeyboardButton.WithCallbackData("Редактировать",
-                                                Facade.KeyboardCommand.EditRegistrationFIOandPhone.ToString())
+                                                KeyboardCommand.EditRegistrationFIOandPhone.ToString())
                                         },
                                     }
                                 );
@@ -1072,8 +1196,8 @@ public partial class TelegramBot : IAsyncDisposable
                                     var imageInput = new InputFileStream(stream, $"{textToEncode}.jpg");
                                     inlineKeyboard = new(
                                       new[] {
-                                     new[] { InlineKeyboardButton.WithCallbackData("Фейк",Facade.KeyboardCommand.FaildCheckPictureFromMenager.ToString()) },
-                                     new[] { InlineKeyboardButton.WithCallbackData("Подтверить", Facade.KeyboardCommand.ApproveCheckPictureFromMenager.ToString()) }
+                                     new[] { InlineKeyboardButton.WithCallbackData("Фейк",KeyboardCommand.FaildCheckPictureFromMenager.ToString()) },
+                                     new[] { InlineKeyboardButton.WithCallbackData("Подтверить", KeyboardCommand.ApproveCheckPictureFromMenager.ToString()) }
                                       }
                                     );
                                     sentMessage = await botClient.SendPhotoAsync(
@@ -1262,7 +1386,7 @@ public partial class TelegramBot : IAsyncDisposable
                         {
                             inlineKeyboard = new(
                                 new[] {
-                                    new[] { InlineKeyboardButton.WithCallbackData("Завершить", Facade.KeyboardCommand.CanselOperation.ToString()) },
+                                    new[] { InlineKeyboardButton.WithCallbackData("Завершить", KeyboardCommand.CanselOperation.ToString()) },
                                 }
                             );
                             

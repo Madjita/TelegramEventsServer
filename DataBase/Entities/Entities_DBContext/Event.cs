@@ -30,8 +30,13 @@ namespace DataBase.Entities.Entities_DBContext
 
         [Column("free_for_no_danser")]
         public bool FreeForNoDanser { get; set; }
+        
+        [Column("telegram_bot_id")]
+        public int TelegramBotId { get; set; }
 
         [Column("is_deleted")]
         public bool IsDeleted { get; set; }
+
+        public TelegramBots TelegramBot { get; set; }
     }
 }
