@@ -465,137 +465,47 @@ public partial class PartyTelegramBot : TelegramBot
         switch (messageText?.ToLower())
         {
             case "/start":
+            {
+                var responce = await _telegramBotFacade.Start(this,telegramUser);
+
+                var responceText = responce.Message ?? "Ошибка";
+
+                if (responce.State == Facade.TelegramUserState.StartRegistration)
                 {
-                    var responce = await _telegramBotFacade.Start(this,telegramUser);
+                    inlineKeyboard = new(
+                        new[] {
+                            new[] { InlineKeyboardButton.WithCallbackData("Зарегистрировать друга", Facade.KeyboardCommand.StartRegistrationFriend.ToString()) },
+                            new[] { InlineKeyboardButton.WithCallbackData("Зарегистрироваться самостоятельно", Facade.KeyboardCommand.StartRegistrationYourSelf.ToString()) }
+                        });
+                }
 
-                    var responceText = responce.Message ?? "Ошибка";
-
-                    if (responce.State == Facade.TelegramUserState.StartRegistration)
-                    {
-                        //Регестрируем себя или другого чиловека.
-                        inlineKeyboard = new(
-                            new[] {
-                               new[] { InlineKeyboardButton.WithCallbackData("Зарегистрировать друга", Facade.KeyboardCommand.StartRegistrationFriend.ToString()) },
-                               new[] { InlineKeyboardButton.WithCallbackData("Зарегистрироваться самостоятельно", Facade.KeyboardCommand.StartRegistrationYourSelf.ToString()) }
-                            }
-                        );
-
-                        //inlineKeyboard = new(
-                        //    new[] {
-                        //       new[] { InlineKeyboardButton.WithCallbackData("Не танцующий",Facade.KeyboardCommand.StartRegistrationNoDancer.ToString()) },
-                        //       new[] { InlineKeyboardButton.WithCallbackData("Танцующий", Facade.KeyboardCommand.StartRegistrationDancer.ToString()) }
-                        //    }
-                        //);
-                    }
-
-                    sentMessage = await botClient.SendTextMessageAsync(
+                sentMessage = await botClient.SendTextMessageAsync(
                               chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
                               responceText,
                               replyMarkup: inlineKeyboard,
                               cancellationToken: cancellationToken);
-                    break;
-                }
-            case "/registrationcustomercompany":
-                {
-                    string responceText = "Регистрация компании.\n"
-                             + "Введите название компании:";
-
-                    var newContext = new MessageContext.TelegramBotMessageContext()
-                    {
-                        LastCommand = messageText?.ToLower(),
-                        State = Facade.TelegramUserState.RegistrationCustomerCompany,
-                        TelegramUser = telegramUser,
-                        LastMessage = responceText,
-                    };
-
-                    if(conxtexMessage is null)
-                    {
-                        _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
-                    }
-                    else
-                    {
-                        conxtexMessage = newContext;
-                    }
-                   
-                    sentMessage = await botClient.SendTextMessageAsync(
-                       chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                       text: responceText,
-                       cancellationToken: cancellationToken);
-                    break;
-                }
-            case "/registrationparty":
-                {
-                    string responceText = "Регистрация Вечеринки.\n"
-                           + "Введите данны:\n\n"
-                           + "*Название вечеринки (дд.мм.гггг)*;\n"
-                           + "*Стоимость (число)*;\n"
-                           + "*Стоимость если есть репост (число)*;\n"
-                           + "*Стоимость в день вечеринки (число)*;\n"
-                           + "*Бесплатный вход не танцующим (да/нет)*\n\n"
-                           + "симовл *;* обязателен в конце каждого типа данных, кроме последней строки. Дату вводить в формате *дд.мм.гггг*\n"
-                           + "Пример:\n";
-
-                    var newContext = new MessageContext.TelegramBotMessageContext()
-                    {
-                        LastCommand = messageText?.ToLower(),
-                        State = Facade.TelegramUserState.RegistrationParty,
-                        TelegramUser = telegramUser,
-                        LastMessage = responceText,
-                    };
-
-                    if (conxtexMessage is null)
-                    {
-                        _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
-                    }
-                    else
-                    {
-                        conxtexMessage = newContext;
-                    }
-
-                    sentMessage = await botClient.SendTextMessageAsync(
-                       chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                       text: responceText.Replace("_", "\\_"),
-                       parseMode: ParseMode.Markdown,
-                       cancellationToken: cancellationToken);
-
-                    sentMessage = await botClient.SendTextMessageAsync(
-                      chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
-                      text: "07.12.2023;\n"
-                           + "Примерное название вечеринки;\n"
-                           + "300;\n"
-                           + "200;\n"
-                           + "400;\n"
-                           + "да\n".Replace("_", "\\_"),
-                      parseMode: ParseMode.Markdown,
-                      cancellationToken: cancellationToken);
-
-                    
-                    break;
-                }
-            case "/admin_setuserrights":
-                {
-                    break;
-                }
+                break;
+            }
             default:
+            {
+                if (conxtexMessage != null)
                 {
-                    if (conxtexMessage != null)
-                    {
                         
-                        var commandContextStrategy = ContextCommandFactory.GetBaseStrategy(message, botClient, _mediator, conxtexMessage, _scopeFactory, _telegramBotFacade);
-                        if(commandContextStrategy is null)
-                            break;
+                    var commandContextStrategy = ContextCommandFactory.GetBaseStrategy(message, botClient, _mediator, conxtexMessage, _scopeFactory, _telegramBotFacade);
+                    if(commandContextStrategy is null)
+                        break;
                     
-                        var responseContextStrategy =  await commandContextStrategy.Execute(telegramUser, messageText, cancellationToken: cancellationToken);
-                        if (responseContextStrategy.DeleteCurrentContext)
-                        {
-                            _messageContexts.TryRemove(
+                    var responseContextStrategy =  await commandContextStrategy.Execute(telegramUser, messageText, cancellationToken: cancellationToken);
+                    if (responseContextStrategy.DeleteCurrentContext)
+                    {
+                        _messageContexts.TryRemove(
                                 new KeyValuePair<long, TelegramBotMessageContext>(telegramUser.TelegramChatId, null));
-                        }
-
-                        sentMessage = responseContextStrategy.SentMessage;
                     }
-                    break;
+
+                    sentMessage = responseContextStrategy.SentMessage;
                 }
+                break;
+            }
         }
 
         if (sentMessage is null)
@@ -606,8 +516,6 @@ public partial class PartyTelegramBot : TelegramBot
                   replyMarkup: replyKeyboardRemove,
                   cancellationToken: cancellationToken);
         }
-
-        return;
     }
 
     public override async Task<ResponceTelegramFacade> Start(User? requestTelegramUser)
