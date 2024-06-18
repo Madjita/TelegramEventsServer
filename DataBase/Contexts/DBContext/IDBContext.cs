@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DataBase.Entities.QrCodeEntities;
 
 namespace DataBase.Contexts.DBContext
 {
@@ -22,11 +23,18 @@ namespace DataBase.Contexts.DBContext
         public DbSet<XOrgUser> XOrgUser { get; }
         public DbSet<TelegramBotInChats> TelegramBotInChats { get; }
         public DbSet<OpenWeatherMap> OpenWeatherMap { get; }
-        public DbSet<WeatherSubscribers> WeatherSubscribers { get; }
-        public DbSet<WeatherCity> WeatherCity { get; }
         public DbSet<TelegramBotTypes> TelegramBotTypes { get; }
+        
         public int SaveChanges();
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+        
+        
+        public DbSet<WeatherSubscribers> WeatherSubscribers { get; }
+        public DbSet<WeatherCity> WeatherCity { get; }
+        public DbSet<CheckData> CheckData { get; }
+        public DbSet<CheckParsedItems> CheckParsedItems { get; }
+        public DbSet<CheckCompany> CheckCompany { get; }
+
     }
 
     public partial class DBContext : DbContext, IDBContext
@@ -49,10 +57,14 @@ namespace DataBase.Contexts.DBContext
         public DbSet<XOrgUser> XOrgUser { get; set; }
         public DbSet<TelegramBotInChats> TelegramBotInChats { get; set; }
         public DbSet<OpenWeatherMap> OpenWeatherMap { get; set; }
+        public DbSet<TelegramBotTypes> TelegramBotTypes { get; set; }
+        
         public DbSet<WeatherSubscribers> WeatherSubscribers { get; set; }
         public DbSet<WeatherCity> WeatherCity { get; set; }
+        public DbSet<CheckData> CheckData { get; set; }
+        public DbSet<CheckParsedItems> CheckParsedItems { get; set; }
+        public DbSet<CheckCompany> CheckCompany { get; set; }
         
-        public DbSet<TelegramBotTypes> TelegramBotTypes { get; set; }
 
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {
@@ -79,9 +91,23 @@ namespace DataBase.Contexts.DBContext
             builder.Entity<XOrgUser>();
             builder.Entity<TelegramBotInChats>();
             builder.Entity<OpenWeatherMap>();
+            builder.Entity<TelegramBotTypes>();
+            
             builder.Entity<WeatherSubscribers>();
             builder.Entity<WeatherCity>();
-            builder.Entity<TelegramBotTypes>();
+            
+            builder.Entity<CheckData>();
+            builder.Entity<CheckCompany>();
+            builder.Entity<CheckParsedItems>()
+                .HasOne(p => p.CheckData)
+                .WithMany(p => p.CheckParsedItems)
+                .HasForeignKey(p => p.CheckDataId);
+            
+            builder.Entity<CheckParsedItems>()
+                .HasOne(p => p.CheckCompany)
+                .WithMany(p => p.CheckParsedItems)
+                .HasForeignKey(p => p.CheckCompanyId);
+
         }
 
         #region Helpers

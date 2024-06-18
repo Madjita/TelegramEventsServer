@@ -21,4 +21,7 @@
     <ProjectReference Include="..\Utils\Utils.csproj" />
     <ProjectReference Include="..\Workers\Workers.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Validators\" />
+  </ItemGroup>
 </Project>

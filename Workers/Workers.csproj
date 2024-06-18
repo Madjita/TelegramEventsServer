@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DataBase\DataBase.csproj" />
     <ProjectReference Include="..\Logger\Logger.csproj" />
+    <ProjectReference Include="..\Processing\Processing.csproj" />
     <ProjectReference Include="..\TelegramBot\TelegramBot.csproj" />
   </ItemGroup>
 

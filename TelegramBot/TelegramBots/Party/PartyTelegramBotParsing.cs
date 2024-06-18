@@ -48,7 +48,6 @@ public partial class PartyTelegramBot : TelegramBot
                 {
                     if (update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Administrator)
                     {
-
                         var result = await _mediator.Send(new CheckExistXOrgUserCommand
                         {
                             telegramUser = new User
@@ -59,8 +58,8 @@ public partial class PartyTelegramBot : TelegramBot
                             BotId = this.TelegramBotId
                         });
 
-                        if (result.Success)
-                        {
+                         if (result.Success)
+                         {
                             var response = _mediator.Send(new UpdateTelegramBotInChatCommand
                             {
                                 newTelegramBotInChat = new TelegramBotInChats()
@@ -82,25 +81,25 @@ public partial class PartyTelegramBot : TelegramBot
                         }
                         else
                         {
-                            await botClient.SendTextMessageAsync(
-                                chatId: update.MyChatMember.Chat.Id,
-                                text: "Только зарегестрированные пользователи могут добавлять меня в канал. Простите, я ливаю.",
-                                cancellationToken: cancellationToken);
-                            
-                            try
-                            {
+                             await botClient.SendTextMessageAsync(
+                                 chatId: update.MyChatMember.Chat.Id,
+                                 text: "Только зарегестрированные пользователи могут добавлять меня в канал. Простите, я ливаю.",
+                                 cancellationToken: cancellationToken);
+                             
+                             try
+                             {
                                 await botClient.LeaveChatAsync(
-                                    chatId: update.MyChatMember.Chat.Id,
-                                    cancellationToken: cancellationToken);
-                            }
-                            catch (ApiRequestException apiEx)
-                            {
-                                Console.WriteLine($"Telegram API Ошибка: {apiEx.Message}");
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"Ошибка: {ex.Message}");
-                            }
+                                     chatId: update.MyChatMember.Chat.Id,
+                                     cancellationToken: cancellationToken);
+                             }
+                             catch (ApiRequestException apiEx)
+                             {
+                                 Console.WriteLine($"Telegram API Ошибка: {apiEx.Message}");
+                             }
+                             catch (Exception ex)
+                             {
+                                 Console.WriteLine($"Ошибка: {ex.Message}");
+                             }
                         }
                     }
                     else if (update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Left || update.MyChatMember.NewChatMember.Status == ChatMemberStatus.Kicked)
@@ -116,6 +115,59 @@ public partial class PartyTelegramBot : TelegramBot
                 
                 break;
             case UpdateType.ChannelPost:
+                
+                var telegramUser = new User
+                {
+                    TelegramChatId = update.ChannelPost.Chat.Id,
+                    MessageId = update.ChannelPost.MessageId,
+                    FirstName = update.ChannelPost.Chat.FirstName,
+                    LastName = update.ChannelPost.Chat.LastName,
+                    UserName = update.ChannelPost.Chat.Username,
+                };
+
+                if (update.ChannelPost.Text.StartsWith("/analyz"))
+                {
+
+                    var text = @"📊 Аналитика посещений танцевальных занятий 📊
+                    Период: с 01.04.2024 по 01.06.2024
+
+                    Таблица посещений:
+                    Дата       | Общее количество посещений | День недели
+                    --------------------------------------------------------
+                    2024-04-01 | 3                          | Понедельник
+                    2024-04-02 | 5                          | Вторник
+                    2024-04-03 | 5                          | Среда
+                    2024-04-04 | 5                          | Четверг
+                    2024-04-05 | 4                          | Пятница
+                    2024-04-06 | 2                          | Суббота
+                    2024-04-07 | 4                          | Воскресенье
+                    ...        | ...                        | ...
+                    2024-06-01 | 5                          | Суббота
+
+                    Среднее количество посещений по дням недели:
+                    День недели | Среднее количество посещений
+                    ---------------------------------------------
+                    Понедельник | 4.2
+                    Вторник     | 4.5
+                    Среда       | 4.7
+                    Четверг     | 4.4
+                    Пятница     | 4.3
+                    Суббота     | 4.6
+                    Воскресенье | 4.1";
+
+                    try
+                    {
+                        await botClient.SendTextMessageAsync(
+                            chatId: update.ChannelPost.Chat.Id,
+                            text: text,
+                            cancellationToken: cancellationToken);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
+                }
+                
                 /*
                 //Зарегестрировать данный чат под конкретную вечеринку вечеринку
                 // 1 выбрать организацию
@@ -205,8 +257,9 @@ public partial class PartyTelegramBot : TelegramBot
                             TelegramUser = telegramUser,
                             LastMessage = command,
                         };
-
-                        _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
+                        
+                        _messageContexts.AddOrUpdate(telegramUser.TelegramChatId, newContext,
+                            (existingKey, existingValue) => newContext);
 
                         await botClient.SendTextMessageAsync(
                               chatId: telegramUser.TelegramChatId,
@@ -232,8 +285,9 @@ public partial class PartyTelegramBot : TelegramBot
                             TelegramUser = telegramUser,
                             LastMessage = command,
                         };
-
-                        _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
+                        
+                        _messageContexts.AddOrUpdate(telegramUser.TelegramChatId, newContext,
+                            (existingKey, existingValue) => newContext);
 
                         await botClient.SendTextMessageAsync(
                                chatId: telegramUser.TelegramChatId,
@@ -461,7 +515,7 @@ public partial class PartyTelegramBot : TelegramBot
         InlineKeyboardMarkup? inlineKeyboard = null;
 
         _messageContexts.TryGetValue(telegramUser.TelegramChatId, out var conxtexMessage);
-
+        
         switch (messageText?.ToLower())
         {
             case "/start":

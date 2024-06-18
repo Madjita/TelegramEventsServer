@@ -17,6 +17,7 @@ using CQRS.Query.Events;
 using CQRS.Query.TelegramBotInChat;
 using CQRS.Query.CustomerCompany;
 using CQRS.Command.UserInfo;
+using DataBase.Entities.QrCodeEntities;
 using Microsoft.AspNetCore.Authorization;
 using MyLoggerNamespace;
 using TelegramEvents.Fasad;
@@ -169,6 +170,8 @@ namespace MailParserMicroService
         private static IServiceCollection AddHostedService(this IServiceCollection serviceCollection, IConfiguration Configuration)
         {
             serviceCollection.AddSingleton<IHostedService, TelegramBotBackgroundService>();
+            
+            serviceCollection.AddSingleton<IHostedService, ProverkaChekaBackgoundService>();
             return serviceCollection;
         }
 
@@ -278,7 +281,15 @@ namespace MailParserMicroService
             serviceCollection.AddScoped<IRequestHandler<GetWeatherCityQuery, WeatherCity?>, GetWeatherCityQueryHandler>();
             serviceCollection.AddScoped<IRequestHandler<GetByIdWeatherCityQuery, WeatherCity?>, GetWeatherCityQueryHandler>();
             serviceCollection.AddScoped<IRequestHandler<UpdateWeatherSubscribersQuery,(bool Success, WeatherSubscribers? WeatherSubscribers)>, UpdateWeatherSubscribersQueryHandler>();
-
+            
+            //checkData
+            serviceCollection.AddScoped<IRequestHandler<UpdateCheckDataCommand, (bool Success, CheckData? OpenWeatherMapDB)>, UpdateCheckDataCommandHandler>();
+            serviceCollection.AddScoped<IRequestHandler<GetCheckDataByProcessedQuery, (bool Success, List<CheckData> CheckDatas)>, GetCheckDataByProcessedQueryHandler>();
+            serviceCollection.AddScoped<IRequestHandler<UpdateCheckParsedItemCommand, (bool Success, CheckParsedItems? CheckParsedItems)>, UpdateCheckParsedItemCommandHandler>();
+            serviceCollection.AddScoped<IRequestHandler<UpdateCheckCompanyCommand, (bool Success, CheckCompany? CheckCompany)>, UpdateCheckCompanyCommandHandler>();
+            
+            serviceCollection.AddScoped<IRequestHandler<GetCheckProcessed_CheckParsedItemCommand, (bool Success, List<CheckParsedItems> ListCheckParsedItems)>, GetCheckProcessed_CheckParsedItemCommandHandler>();
+            
             return serviceCollection;
         }
 

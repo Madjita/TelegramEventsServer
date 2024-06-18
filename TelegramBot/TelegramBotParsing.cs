@@ -49,7 +49,7 @@ public partial class TelegramBot : IAsyncDisposable
                 {
                     _chanelPostId = null;
                 }
-
+                
                 break;
             case UpdateType.ChannelPost:
                 /*
@@ -131,8 +131,10 @@ public partial class TelegramBot : IAsyncDisposable
                         TelegramUser = telegramUser,
                         LastMessage = command,
                     };
-
-                    _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
+                    telegramUser.TelegramChatId = telegramUser.TelegramChatId;
+                    _messageContexts.AddOrUpdate(telegramUser.TelegramChatId, newContext,
+                        (existingKey, existingValue) => newContext);
+                    
                     await botClient.SendTextMessageAsync(
                         chatId: telegramUser.TelegramChatId,
                         text: responseText,
@@ -484,8 +486,9 @@ public partial class TelegramBot : IAsyncDisposable
                         TelegramUser = telegramUser,
                         LastMessage = responceText,
                     };
-
-                    var added = _messageContexts.TryAdd(telegramUser.TelegramChatId, newContext);
+                    
+                    _messageContexts.AddOrUpdate(telegramUser.TelegramChatId, newContext,
+                        (existingKey, existingValue) => newContext);
 
                     await botClient.EditMessageTextAsync(
                         chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
@@ -906,6 +909,59 @@ public partial class TelegramBot : IAsyncDisposable
 
         _messageContexts.TryGetValue(telegramUser.TelegramChatId, out var conxtexMessage);
 
+
+        if (messageText.StartsWith("/analysis"))
+        {
+            var text = @"📊 Аналитика посещений танцевальных занятий 📊
+Период: с 01.04.2024 по 01.06.2024
+Таблица посещений:
+Дата       | Общее количество посещений | День недели
+--------------------------------------------------------
+2024-04-01 | 3                          | Понедельник
+2024-04-02 | 5                          | Вторник
+2024-04-03 | 5                          | Среда
+2024-04-04 | 5                          | Четверг
+2024-04-05 | 4                          | Пятница
+2024-04-06 | 2                          | Суббота
+2024-04-07 | 4                          | Воскресенье
+...        | ...                        | ...
+2024-06-01 | 5                          | Суббота
+
+Среднее количество посещений по дням недели:
+День недели | Среднее количество посещений
+---------------------------------------------
+Понедельник | 4.2
+Вторник     | 4.5
+Среда       | 4.7
+Четверг     | 4.4
+Пятница     | 4.3
+Суббота     | 4.6
+Воскресенье | 4.1";
+
+            sentMessage = await botClient.SendTextMessageAsync(
+                chatId: telegramUser.TelegramChatId <= 0 ? chatId : telegramUser!.TelegramChatId,
+                text: text,
+                cancellationToken: cancellationToken);
+            return;
+        }
+        
+        if (message.Text.StartsWith("/list"))
+        {
+
+            var text = @"Смоглюк Дмитрий Юрьевич +375292637500";
+            try
+            {
+                await botClient.SendTextMessageAsync(
+                    chatId: message.Chat.Id,
+                    text: text,
+                    cancellationToken: cancellationToken);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            return;
+        }
 
         switch (messageText.ToLower())
         {

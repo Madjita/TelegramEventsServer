@@ -1,4 +1,5 @@
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json.Serialization;
 using Couchbase.Extensions.DependencyInjection;
 using MailParserMicroService;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -13,6 +14,13 @@ IServiceCollection serviceCollection = builder.Services;
 serviceCollection.InitSettings(configurationManager, env);
 
 builder.Services.AddControllers();
+// builder.Services.AddControllers()
+//     .AddJsonOptions(options =>
+//     {
+//         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+//         options.JsonSerializerOptions.WriteIndented = true;
+//     });
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
