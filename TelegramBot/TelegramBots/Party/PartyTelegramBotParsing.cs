@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Telegram.Bot.Exceptions;
 using System.Drawing;
 using System.Text;
+using System.Text.RegularExpressions;
 using TelegramBot.TelegramBots.MainManager;
 
 namespace TelegramBot.TelegramBots.Party;
@@ -411,45 +412,106 @@ public partial class PartyTelegramBot : TelegramBot
                         break;
                     }
                 case Facade.KeyboardCommand.FaildCheckPictureFromMenager:
-                    {
-                        if (query.Message.Caption is not null)
-                        {
-                            await botClient.EditMessageCaptionAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               caption: $"{query.Message.Caption.Replace("_", "\\_")}\n *[Фейк]*",
-                               parseMode: ParseMode.Markdown);
-                        }
-                        else if (query.Message.Text is not null)
-                        {
-                            await botClient.EditMessageTextAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               text: $"{query.Message.Text.Replace("_", "\\_")}\n *[Фейк]*",
-                               parseMode: ParseMode.Markdown);
-                        }
+                {
+                        string? textForAdministrator = $"{(query.Message.Caption ?? query.Message.Text)?.Replace("_", "\\_")}\n *[Фейк]*";
+                        string userCode = string.Empty;
+                        
+                        await botClient.EditMessageCaptionAsync(
+                            chatId: query.Message.Chat.Id,
+                            messageId: query.Message.MessageId,
+                            caption: textForAdministrator,
+                            parseMode: ParseMode.Markdown);
+                        
+                        //Ищем в тексте id пользователя:
+                        // Регулярное выражение для поиска кода пользователя
+                        string pattern = @"Телеграм пользователь:\s*(\d+)\s+";
 
+                        // Создание объекта Regex и выполнение поиска
+                        Match match = Regex.Match(textForAdministrator, pattern);
+
+                        if (match.Success)
+                        {
+                            // Извлечение кода пользователя
+                            userCode = match.Groups[1].Value;
+                            Console.WriteLine($"Код пользователя: {userCode}");
+                            
+                            if (long.TryParse(userCode, out long number))
+                            {
+                                // Успешное преобразование, используйте `number`
+                                await botClient.SendTextMessageAsync(
+                                    chatId: number,
+                                    text: "Администратор обнаружил некорректный чек.",
+                                    cancellationToken: cancellationToken);
+                            }
+                            else
+                            {
+                                // Обработка ошибки преобразования
+                                await botClient.SendTextMessageAsync(
+                                    chatId: telegramUser.TelegramChatId,
+                                    text: $"Ошибка: не удалось преобразовать код пользователя '{userCode}' в число.",
+                                    cancellationToken: cancellationToken);
+                            }
+                        }
+                        else
+                        {
+                            await botClient.SendTextMessageAsync(
+                                chatId: telegramUser.TelegramChatId,
+                                text: "Код пользователя не найден.",
+                                cancellationToken: cancellationToken);
+                        }
+                        
                         break;
                     }
                 case Facade.KeyboardCommand.ApproveCheckPictureFromMenager:
                     {
-                        if (query.Message.Caption is not null)
+                        string? textForAdministrator = $"{(query.Message.Caption ?? query.Message.Text)?.Replace("_", "\\_")}\n *[Подтвержден]*";
+                        string userCode = string.Empty;
+                        
+                        await botClient.EditMessageCaptionAsync(
+                            chatId: query.Message.Chat.Id,
+                            messageId: query.Message.MessageId,
+                            caption: textForAdministrator,
+                            parseMode: ParseMode.Markdown);
+
+                        
+                        //Ищем в тексте id пользователя:
+                        // Регулярное выражение для поиска кода пользователя
+                        string pattern = @"Телеграм пользователь:\s*(\d+)\s+";
+
+                        // Создание объекта Regex и выполнение поиска
+                        Match match = Regex.Match(textForAdministrator, pattern);
+
+                        if (match.Success)
                         {
-                            await botClient.EditMessageCaptionAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               caption: $"{query.Message.Caption.Replace("_", "\\_")}\n *[Подтвержден]*",
-                               replyMarkup: null,
-                               parseMode: ParseMode.Markdown);
+                            // Извлечение кода пользователя
+                            userCode = match.Groups[1].Value;
+                            Console.WriteLine($"Код пользователя: {userCode}");
+                            
+                            if (long.TryParse(userCode, out long number))
+                            {
+                                // Успешное преобразование, используйте `number`
+                                await botClient.SendTextMessageAsync(
+                                    chatId: number,
+                                    text: "Администратор подтвердил регистрацию.",
+                                    cancellationToken: cancellationToken);
+                            }
+                            else
+                            {
+                                // Обработка ошибки преобразования
+                                await botClient.SendTextMessageAsync(
+                                    chatId: telegramUser.TelegramChatId,
+                                    text: $"Ошибка: не удалось преобразовать код пользователя '{userCode}' в число.",
+                                    cancellationToken: cancellationToken);
+                            }
                         }
-                        else if (query.Message.Text is not null)
+                        else
                         {
-                            await botClient.EditMessageTextAsync(
-                               chatId: query.Message.Chat.Id,
-                               messageId: query.Message.MessageId,
-                               text: $"{query.Message.Text.Replace("_", "\\_")}\n *[Подтвержден]*",
-                               parseMode: ParseMode.Markdown);
+                            await botClient.SendTextMessageAsync(
+                                chatId: telegramUser.TelegramChatId,
+                                text: "Код пользователя не найден.",
+                                cancellationToken: cancellationToken);
                         }
+                        
                         break;
                     }
             }

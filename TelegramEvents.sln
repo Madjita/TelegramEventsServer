@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Authorization", "Authorizat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Processing", "Processing\Processing.csproj", "{59AEF2A6-BF5F-4DF4-AF05-1386093A95F2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ", "RabbitMQ\RabbitMQ.csproj", "{DF66D168-33A8-4B44-B83C-620A69A10C0F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonTypes", "CommonTypes\CommonTypes.csproj", "{ADC65D1A-DBF8-443E-86D6-CC6459497E51}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +67,14 @@ Global
 		{59AEF2A6-BF5F-4DF4-AF05-1386093A95F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59AEF2A6-BF5F-4DF4-AF05-1386093A95F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{59AEF2A6-BF5F-4DF4-AF05-1386093A95F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF66D168-33A8-4B44-B83C-620A69A10C0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF66D168-33A8-4B44-B83C-620A69A10C0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF66D168-33A8-4B44-B83C-620A69A10C0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF66D168-33A8-4B44-B83C-620A69A10C0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADC65D1A-DBF8-443E-86D6-CC6459497E51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADC65D1A-DBF8-443E-86D6-CC6459497E51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADC65D1A-DBF8-443E-86D6-CC6459497E51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADC65D1A-DBF8-443E-86D6-CC6459497E51}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

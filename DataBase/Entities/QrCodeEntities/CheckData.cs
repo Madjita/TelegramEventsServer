@@ -66,7 +66,12 @@ public class CheckData : EntityBase
     {
         return $"t={T}&s={S}&fn={Fn}&i={I}&fp={Fp}&n={N}";
     }
-    
+
+    public static CheckData FromString(string data)
+    {
+        CheckData task = JsonConvert.DeserializeObject<CheckData>(data);
+        return task;
+    }
 }
 
 public enum CheckProcessed

@@ -15,9 +15,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Authorization\Authorization.csproj" />
+    <ProjectReference Include="..\CommonTypes\CommonTypes.csproj" />
     <ProjectReference Include="..\CQRS\CQRS.csproj" />
     <ProjectReference Include="..\DataBase\DataBase.csproj" />
     <ProjectReference Include="..\Logger\Logger.csproj" />
+    <ProjectReference Include="..\RabbitMQ\RabbitMQ.csproj" />
     <ProjectReference Include="..\Utils\Utils.csproj" />
     <ProjectReference Include="..\Workers\Workers.csproj" />
   </ItemGroup>

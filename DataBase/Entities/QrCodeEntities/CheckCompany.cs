@@ -12,10 +12,10 @@ public class CheckCompany : EntityBase
     public long Inn  { get; set; }
     
     [Column("retail_place")]
-    public string RetailPlace { get; set; }
+    public string? RetailPlace { get; set; }
     
     [Column("retail_place_address")]
-    public string RetailPlaceAddress { get; set; }
+    public string? RetailPlaceAddress { get; set; }
     
     [Column("seller_address")]
     public string? SellerAddress { get; set; }

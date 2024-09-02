@@ -1,5 +1,4 @@
-﻿using DataBase.Entities.QrCodeEntities;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace MailParserMicroService.ResponseDto;
 

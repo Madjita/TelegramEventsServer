@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
+using System.Text;
 using Authorization;
+using CommonTypes.RabbitDto;
 using CQRS.Query;
 using DataBase.Entities.QrCodeEntities;
 using MailParserMicroService.RequestDto;
@@ -10,6 +12,8 @@ using Microsoft.AspNetCore.Authorization;
 using MyLoggerNamespace;
 using MyLoggerNamespace.Enums;
 using MyLoggerNamespace.Helpers;
+using Newtonsoft.Json;
+using RabbitMQ;
 
 namespace TelegramEvents.Controllers;
 
@@ -20,11 +24,14 @@ public class QrCodeController : ControllerBase
 {
     private readonly IMyLogger _logger;
     private readonly IMediator _mediator;
+    
+    private readonly IProducer _producer;
 
-    public QrCodeController(IMediator mediator)
+    public QrCodeController(IMediator mediator,IProducer producer)
     {
         _logger = MyLoggerNamespace.Logger.InitLogger(this.GetType().Name);
         _mediator = mediator;
+        _producer = producer;
     }
     
     [Route("Save")]
@@ -51,14 +58,34 @@ public class QrCodeController : ControllerBase
                         S = checkDataDictionary["s"],
                         T = checkDataDictionary["t"]
                     }});
-
+                    
                     if (response.Success)
                     {
+                        var checkDataRabbitDto = new CheckDataRabbitDto()
+                        {
+                            Fn = checkDataDictionary["fn"],
+                            Fp = checkDataDictionary["fp"],
+                            I = checkDataDictionary["i"],
+                            N = checkDataDictionary["n"],
+                            S = checkDataDictionary["s"],
+                            T = checkDataDictionary["t"],
+                            RepeatCount = 0,
+                        };
+
+                        _producer.Publish(JsonConvert.SerializeObject(checkDataRabbitDto));
                         return Ok("We have received the information and are processing it.");
                     }
+                    else
+                    {
+                        //TODO: подумать над тем, что если в базе этот чек с ошибкой то иформирвоать пользователя, что он не обработается.
+                        if (response.checkData is not null)
+                        {
+                            return Ok("The check is being processed");
+                        }
+                        
+                        return BadRequest("Error when saving Qr code");
+                    }
                 }
-                
-                return Ok("We have received the information and are processing it.");
             }
             catch (Exception e)
             {
@@ -67,7 +94,7 @@ public class QrCodeController : ControllerBase
             }
         }
         
-        return Ok("We have received the information and are processing it.");
+        return BadRequest("It is no QR check");
     }
 
     [Route("GetCheckProcessed")]
@@ -169,5 +196,35 @@ public class QrCodeController : ControllerBase
         }
 
         return BadRequest("Check not found");
+    }
+    
+    [HttpGet("stream")]
+    [AllowAnonymous]
+    public async Task GetStream(CancellationToken cancellationToken)
+    {
+        Response.Headers.Add("Content-Type", "text/event-stream");
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                // Генерация и отправка данных клиенту
+                var data = $"data: {DateTime.Now}\n\n";
+                await Response.Body.WriteAsync(Encoding.UTF8.GetBytes(data), cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
+
+                // Задержка перед отправкой следующего сообщения
+                await Task.Delay(1000, cancellationToken);
+            }
+            catch (TaskCanceledException e)
+            {
+                _logger.WriteLine(e,$"[QrCodeController.GetStream] Client have been disconnected");
+                break;
+            }
+            catch (Exception e)
+            {
+                _logger.WriteLine(e,$"[QrCodeController.GetStream] Have exception");
+                break;
+            }
+        }
     }
 }

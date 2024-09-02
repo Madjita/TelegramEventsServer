@@ -20,8 +20,13 @@ using CQRS.Command.UserInfo;
 using DataBase.Entities.QrCodeEntities;
 using Microsoft.AspNetCore.Authorization;
 using MyLoggerNamespace;
+using MyLoggerNamespace.Models;
+using RabbitMQ;
+using RabbitMQ.Client;
+using RabbitMQ.Dispatchers;
 using TelegramEvents.Fasad;
 using Utils.Managers;
+using Workers.Producers;
 
 namespace MailParserMicroService
 {
@@ -43,10 +48,9 @@ namespace MailParserMicroService
             services.InitMediatorCommands(configurationManager);
             services.InitTelegramBotCommands(configurationManager);
 
-
+            services.InitRabbitMQ(configurationManager);
             services.AddConfigureAuthentication();
             services.AddConfigureAuthorization(configurationManager);
-
             services.AddHostedService(configurationManager);
 
 
@@ -60,10 +64,19 @@ namespace MailParserMicroService
             serviceCollection.AddCors(options =>
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000", "http://192.168.0.2:3000", "http://95.188.89.10:3000", "http://192.168.18.65:3000", "https://192.168.0.2:3000", "https://95.188.89.10:3000") // Укажите домен фронтенда
-                       .AllowAnyMethod()
-                       .AllowAnyHeader()
-                       .AllowCredentials();
+                    policy.SetIsOriginAllowed(origin => true)
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
+                    // policy.WithOrigins("http://localhost:3000", 
+                    //         "http://192.168.0.2:3000", 
+                    //         "http://95.188.89.10:3000", 
+                    //         "http://192.168.18.65:3000", 
+                    //         "https://192.168.0.2:3000", 
+                    //         "https://95.188.89.10:3000") // Укажите домен фронтенда
+                    //    .AllowAnyMethod()
+                    //    .AllowAnyHeader()
+                    //    .AllowCredentials();
                     //.SetIsOriginAllowed(_ => true);
                     // policy.AllowAnyMethod()
                     //     .AllowAnyHeader()
@@ -171,7 +184,6 @@ namespace MailParserMicroService
         {
             serviceCollection.AddSingleton<IHostedService, TelegramBotBackgroundService>();
             
-            serviceCollection.AddSingleton<IHostedService, ProverkaChekaBackgoundService>();
             return serviceCollection;
         }
 
@@ -283,12 +295,13 @@ namespace MailParserMicroService
             serviceCollection.AddScoped<IRequestHandler<UpdateWeatherSubscribersQuery,(bool Success, WeatherSubscribers? WeatherSubscribers)>, UpdateWeatherSubscribersQueryHandler>();
             
             //checkData
-            serviceCollection.AddScoped<IRequestHandler<UpdateCheckDataCommand, (bool Success, CheckData? OpenWeatherMapDB)>, UpdateCheckDataCommandHandler>();
+            serviceCollection.AddScoped<IRequestHandler<UpdateCheckDataCommand, (bool Success, CheckData? CheckData)>, UpdateCheckDataCommandHandler>();
             serviceCollection.AddScoped<IRequestHandler<GetCheckDataByProcessedQuery, (bool Success, List<CheckData> CheckDatas)>, GetCheckDataByProcessedQueryHandler>();
             serviceCollection.AddScoped<IRequestHandler<UpdateCheckParsedItemCommand, (bool Success, CheckParsedItems? CheckParsedItems)>, UpdateCheckParsedItemCommandHandler>();
             serviceCollection.AddScoped<IRequestHandler<UpdateCheckCompanyCommand, (bool Success, CheckCompany? CheckCompany)>, UpdateCheckCompanyCommandHandler>();
             
             serviceCollection.AddScoped<IRequestHandler<GetCheckProcessed_CheckParsedItemCommand, (bool Success, List<CheckParsedItems> ListCheckParsedItems)>, GetCheckProcessed_CheckParsedItemCommandHandler>();
+            serviceCollection.AddScoped<IRequestHandler<GetCheckDataByDataQuery, (bool Success, CheckData? CheckData)>, GetCheckDataByDataQueryHandler>();
             
             return serviceCollection;
         }
@@ -303,6 +316,87 @@ namespace MailParserMicroService
 
             return serviceCollection;
         }
+
+
+        public static IServiceCollection InitRabbitMQ(this IServiceCollection serviceCollection, IConfiguration configuration)
+        {
+            var rabbitMqSettings = configuration.GetSection("RabbitMQ").Get< RabbitMQ.ConfigModels.RabbitMQSettings>();
+
+            if (rabbitMqSettings is null)
+                return serviceCollection;
+            
+            serviceCollection.AddSingleton(rabbitMqSettings);
+
+            serviceCollection.AddSingleton<IConnection>(sp =>
+            {
+                var factory = new ConnectionFactory()
+                {
+                    HostName = rabbitMqSettings.HostName,
+                    Port = rabbitMqSettings.Port,
+                    UserName = rabbitMqSettings.UserName,
+                    Password = rabbitMqSettings.Password
+                };
+                return factory.CreateConnection();
+            });
+
+            serviceCollection.AddSingleton<IConsumer>(sp =>
+            {
+                try
+                {
+                    var connection = sp.GetRequiredService<IConnection>();
+                    return new RabbitMqConsumer(connection, rabbitMqSettings);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    return null;
+                }
+
+            });
+            
+
+            var proverkaCheckDispatcher = rabbitMqSettings.Queues.FirstOrDefault(_ =>
+                ProverkaCheckDispatcher.ClassLoggerName.StartsWith(_.StartClassName, StringComparison.OrdinalIgnoreCase));
+            
+            if(proverkaCheckDispatcher is not null)
+            {
+                // Регистрация диспетчера
+                serviceCollection.AddSingleton<ProverkaCheckDispatcher>(sp =>
+                {
+                    try
+                    {
+                        var consumer = sp.GetRequiredService<IConsumer>();
+                        var serviceScopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
+                        return new ProverkaCheckDispatcher(serviceScopeFactory,consumer, proverkaCheckDispatcher, 1); 
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        return new ProverkaCheckDispatcher();
+                    }
+                    
+                });
+                
+                serviceCollection.AddSingleton<IProducer,ProverkaCheckProducer>(sp =>
+                {
+                    try
+                    {
+                        var connection = sp.GetRequiredService<IConnection>();
+                        return new ProverkaCheckProducer(connection, proverkaCheckDispatcher);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        return new ProverkaCheckProducer();
+                    }
+                });
+            }
+            
+           
+
+            return serviceCollection;
+        }
+        
 
     }
 }

@@ -36,21 +36,18 @@ public class UpdateCheckDataCommandHandler : DbContextInjection, IRequestHandler
                 // Если запись не существует, добавляем новую запись
                 await db.CheckData.AddAsync(request.newCheckData, cancellationToken);
                 await db.SaveChangesAsync(cancellationToken);
+                return (true, request.newCheckData);
             }
-            else
+            else if (request.Update)
             {
-
-                if (request.Update)
-                {
-                    existingData.Date = request.newCheckData.Date.ToUniversalTime();
-                    existingData.Processed = request.newCheckData.Processed;
-                    db.CheckData.Update(existingData);
-                    await db.SaveChangesAsync(cancellationToken);
-                }
-               
+                existingData.Date = request.newCheckData.Date.ToUniversalTime();
+                existingData.Processed = request.newCheckData.Processed;
+                db.CheckData.Update(existingData);
+                await db.SaveChangesAsync(cancellationToken);
+                return (true, existingData);
             }
             
-            return (true, request.newCheckData);
+            return (false, existingData);
         }
         catch (Exception ex)
         {
